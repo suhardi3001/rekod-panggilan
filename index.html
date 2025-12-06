@@ -302,7 +302,16 @@
                 logDebug("ERROR: Keys not set! Please edit index.html");
                 alert("RALAT CONFIG: Sila buka kod dan masukkan 'supabaseUrl' dan 'supabaseAnonKey' anda.");
             } else {
-                logDebug("Keys detected. attempting to initialize Supabase...");
+                // Verify URL format
+                if (!supabaseUrl.startsWith("https://")) {
+                     logDebug("CRITICAL ERROR: supabaseUrl must start with 'https://'");
+                     alert("ERROR: supabaseUrl anda salah. Mesti bermula dengan 'https://'");
+                } else if (supabaseUrl.includes(" ")) {
+                     logDebug("CRITICAL ERROR: supabaseUrl contains spaces");
+                     alert("ERROR: supabaseUrl anda mengandungi 'space'. Sila padam.");
+                } else {
+                     logDebug("Keys detected. URL format seems OK.");
+                }
             }
         });
 
@@ -327,7 +336,17 @@
         async function checkAuth() {
             logDebug("Checking Authentication Session...");
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
+                // Timeout Race to detect network blocking
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Connection Timeout (5s)")), 5000)
+                );
+
+                logDebug("Sending request to Supabase (getSession)...");
+                const sessionPromise = supabase.auth.getSession();
+                
+                // Race the session check against the 5s timeout
+                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+
                 if (error) {
                     logDebug("Session Error: " + error.message);
                     return;
@@ -341,7 +360,11 @@
                     showLogin();
                 }
             } catch (err) {
-                logDebug("Unexpected Auth Exception: " + err.message);
+                logDebug("CRITICAL ERROR: " + err.message);
+                if (err.message.includes("Timeout")) {
+                     logDebug("HINT: Semak URL Supabase anda. Pastikan tiada 'space' atau typo. Atau firewall sekolah/pejabat blok connection.");
+                     alert("Connection Timeout: Sistem gagal menghubungi Supabase dalam 5 saat. Sila semak URL atau Internet anda.");
+                }
             }
         }
 
