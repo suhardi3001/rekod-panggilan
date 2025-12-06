@@ -911,8 +911,8 @@
                 "Gred": r.gred,
                 "Kod PTJ": r.kod_ptj,
                 "Jabatan": r.department,
-                "Status": r.confirmation,
-                "Nota": r.notes
+                "Status Selesai": r.confirmation,
+                "Perkara / Masalah": r.notes
             }));
 
             const ws = XLSX.utils.json_to_sheet(cleanData);
@@ -927,7 +927,7 @@
             const doc = new jsPDF();
             doc.text("Laporan Rekod Log", 14, 15);
             doc.autoTable({
-                head: [['Masa', 'IC', 'Nama', 'Jabatan', 'Status', 'Nota']],
+                head: [['Masa', 'IC', 'Nama', 'Jabatan', 'Status Selesai', 'Perkara / Masalah']],
                 body: currentRecords.map(r => [
                     new Date(r.created_at).toLocaleDateString(),
                     r.ic_number,
