@@ -393,7 +393,9 @@
             }
         });
 
-        const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+        // Initialize Supabase Client
+        // FIX: Explicitly use window.supabase to avoid ReferenceError due to variable shadowing
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
         
         // ================= STATE MANAGEMENT =================
         let currentUser = null;
