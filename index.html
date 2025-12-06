@@ -11,7 +11,7 @@
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- SheetJS (Excel Export) -->
+    <!-- SheetJS (Excel Export/Import) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     
     <!-- jsPDF (PDF Export) -->
@@ -203,7 +203,13 @@
                 <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800"><i data-lucide="database"></i> Pangkalan Data REKOD</h2>
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2">
+                            <!-- Hidden File Input for Import -->
+                            <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleFileUpload(event)">
+                            
+                            <button onclick="triggerImport()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2">
+                                <i data-lucide="upload"></i> Import Excel
+                            </button>
                             <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center gap-2">
                                 <i data-lucide="sheet"></i> Export Excel
                             </button>
@@ -240,15 +246,15 @@
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 transition duration-300 opacity-0">
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 transition duration-300 opacity-0 z-50">
         Notification message
     </div>
 
     <script>
         // ================= CONFIGURATION =================
         // REPLACE THESE WITH YOUR ACTUAL SUPABASE KEYS
-        const supabaseUrl = 'https://objxfgosatmasjjifkkg.supabase.co'; 
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw';
+        const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL'; 
+        const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
 
         const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
         
@@ -424,7 +430,7 @@
             }
         });
 
-        // ================= RECORDS & EXPORT =================
+        // ================= RECORDS, EXPORT & IMPORT =================
         let currentRecords = [];
 
         async function fetchRecords() {
@@ -470,6 +476,7 @@
             });
         }
 
+        // --- Export Functions ---
         function exportToExcel() {
             if(currentRecords.length === 0) { alert("Tiada data untuk diexport"); return; }
             
@@ -499,6 +506,68 @@
                 startY: 20
             });
             doc.save("Rekod_Log.pdf");
+        }
+
+        // --- Import Functions ---
+        function triggerImport() {
+            document.getElementById('excel-upload').click();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showToast("Sedang memproses fail...");
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                    if (jsonData.length === 0) {
+                        alert("Fail kosong atau format salah.");
+                        return;
+                    }
+
+                    // Pre-process data to ensure it matches DB structure
+                    // We map common headers or assume keys are correct
+                    const recordsToInsert = jsonData.map(row => ({
+                        ic_number: row.ic_number || row.IC || row.ic || '',
+                        nama: row.nama || row.Name || row.Nama || '',
+                        telefon: row.telefon || row.Phone || row.Telefon || '',
+                        emel: row.emel || row.Email || row.Emel || '',
+                        gred: row.gred || row.Grade || row.Gred || '',
+                        kod_ptj: row.kod_ptj || row.KodPTJ || '',
+                        department: row.department || row.Department || row.Jabatan || '',
+                        notes: row.notes || row.Notes || row.Nota || '',
+                        confirmation: row.confirmation || row.Status || 'TIDAK',
+                        submitted_by: currentUser.id // Tag imported rows with current user
+                    }));
+
+                    // Insert into Supabase
+                    const { error } = await supabase
+                        .from('rekod')
+                        .insert(recordsToInsert);
+
+                    if (error) {
+                        alert("Ralat semasa import: " + error.message);
+                    } else {
+                        showToast(`Berjaya import ${recordsToInsert.length} rekod!`);
+                        fetchRecords(); // Refresh table
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Ralat memproses fail Excel.");
+                }
+                
+                // Reset input so same file can be selected again if needed
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         // ================= UTILS =================
