@@ -178,12 +178,27 @@
                 
                 <!-- Search Section -->
                 <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
-                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="search"></i> Carian Pangkalan Data</h2>
-                    <div class="flex gap-2">
-                        <input type="text" id="global-search" class="flex-grow px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cari ID, Nama, atau No Telefon...">
-                        <button onclick="performSearch()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Cari</button>
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="search"></i> Carian Live (Master Data)</h2>
+                    
+                    <!-- Updated Live Search Component -->
+                    <div class="relative">
+                        <div class="flex gap-2">
+                            <div class="relative flex-grow">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                                    <i data-lucide="search" class="w-5 h-5"></i>
+                                </span>
+                                <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Taip Nama atau IC untuk carian live..." autocomplete="off">
+                            </div>
+                            <!-- Manual trigger if needed, though input handles it -->
+                            <button onclick="document.getElementById('global-search').focus()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Cari</button>
+                        </div>
+                        
+                        <!-- Search Dropdown Results -->
+                        <div id="search-results-dropdown" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-100 hidden max-h-60 overflow-y-auto mt-1">
+                            <!-- Results injected here -->
+                        </div>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">* Fungsi ini akan mencari dari pangkalan data utama (simulasi).</p>
+                    <p class="text-xs text-gray-500 mt-2">* Carian ini disambungkan ke pangkalan data 'personnel' anda.</p>
                 </div>
 
                 <!-- Input Form Section -->
@@ -288,12 +303,21 @@
                 <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800"><i data-lucide="database"></i> Pangkalan Data REKOD</h2>
-                        <div class="flex flex-wrap gap-2">
-                            <!-- Hidden File Input for Import -->
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <!-- Hidden File Input for RECORD Import -->
                             <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleFileUpload(event)">
+                            <!-- Hidden File Input for MASTER DATA Import -->
+                            <input type="file" id="master-data-upload" accept=".xlsx, .xls" class="hidden" onchange="handleMasterDataUpload(event)">
                             
-                            <button onclick="triggerImport()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2">
-                                <i data-lucide="upload"></i> Import Excel
+                            <!-- Master Data Button Group -->
+                            <div class="bg-blue-50 p-1 rounded-lg border border-blue-100 flex gap-2 mr-2">
+                                <button onclick="triggerMasterUpload()" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2" title="Upload ke Table Personnel">
+                                    <i data-lucide="database-backup"></i> Import Data Induk
+                                </button>
+                            </div>
+
+                            <button onclick="triggerImport()" class="bg-gray-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 flex items-center gap-2">
+                                <i data-lucide="upload"></i> Import Rekod
                             </button>
                             <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center gap-2">
                                 <i data-lucide="sheet"></i> Export Excel
@@ -399,12 +423,27 @@
         
         // ================= STATE MANAGEMENT =================
         let currentUser = null;
+        let searchTimeout = null;
 
         // ================= INITIALIZATION =================
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             updateDateDisplay();
             checkAuth();
+            
+            // Live Search Listener
+            document.getElementById('global-search').addEventListener('input', (e) => {
+                handleLiveSearch(e.target.value);
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                const searchContainer = document.querySelector('.relative'); // Adjust selector specificity if needed
+                const dropdown = document.getElementById('search-results-dropdown');
+                if (!e.target.closest('#global-search') && !e.target.closest('#search-results-dropdown')) {
+                    dropdown.classList.add('hidden');
+                }
+            });
         });
 
         function updateDateDisplay() {
@@ -442,7 +481,6 @@
                 logDebug("CRITICAL ERROR: " + err.message);
                 if (err.message.includes("Timed Out")) {
                      logDebug("HINT: Semak URL Supabase anda. Pastikan tiada 'space' atau typo. Atau firewall sekolah/pejabat blok connection.");
-                     // Don't alert here to avoid spamming on load, just log
                 }
             }
         }
@@ -608,6 +646,77 @@
             }
         }
 
+        // ================= LIVE SEARCH FEATURE =================
+        function handleLiveSearch(query) {
+            const dropdown = document.getElementById('search-results-dropdown');
+            
+            // Clear existing timeout
+            if (searchTimeout) clearTimeout(searchTimeout);
+
+            if (!query || query.length < 2) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            // Debounce search by 300ms
+            searchTimeout = setTimeout(async () => {
+                // Show loading state
+                dropdown.classList.remove('hidden');
+                dropdown.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center">Sedang mencari...</div>';
+
+                // Query Supabase 'personnel' table
+                // Using 'ilike' for case-insensitive partial matching
+                const { data, error } = await supabase
+                    .from('personnel')
+                    .select('*')
+                    .or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%`)
+                    .limit(5);
+
+                if (error) {
+                    console.error(error);
+                    dropdown.innerHTML = '<div class="p-3 text-sm text-red-500 text-center">Ralat carian.</div>';
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    dropdown.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center">Tiada rekod dijumpai.</div>';
+                    return;
+                }
+
+                // Render Results
+                dropdown.innerHTML = '';
+                data.forEach(person => {
+                    const item = document.createElement('div');
+                    item.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 border-gray-100';
+                    item.innerHTML = `
+                        <div class="font-bold text-gray-800">${person.nama}</div>
+                        <div class="text-xs text-gray-500 flex justify-between mt-1">
+                            <span>IC: ${person.ic_number}</span>
+                            <span>${person.department || ''}</span>
+                        </div>
+                    `;
+                    item.onclick = () => fillFormWithPersonnel(person);
+                    dropdown.appendChild(item);
+                });
+
+            }, 300);
+        }
+
+        function fillFormWithPersonnel(person) {
+            document.getElementById('ic').value = person.ic_number || '';
+            document.getElementById('nama').value = person.nama || '';
+            document.getElementById('telefon').value = person.telefon || '';
+            document.getElementById('emel').value = person.emel || '';
+            document.getElementById('gred').value = person.gred || '';
+            document.getElementById('kod_ptj').value = person.kod_ptj || '';
+            document.getElementById('department').value = person.department || '';
+            
+            // Hide dropdown
+            document.getElementById('search-results-dropdown').classList.add('hidden');
+            document.getElementById('global-search').value = ''; // Clear search
+            showToast("Maklumat telah diisi!");
+        }
+
         // ================= FORM FEATURES =================
         function enableEdit(fieldId) {
             const field = document.getElementById(fieldId);
@@ -618,28 +727,10 @@
             showToast(`Anda kini boleh menyunting ${fieldId.toUpperCase()}`);
         }
 
+        // No longer used, replaced by Live Search
         function performSearch() {
-            const query = document.getElementById('global-search').value;
-            if (!query) return;
-
-            // SIMULATION: In a real app, you would query Supabase for this data
-            // Since we don't have the external databases (IC, NAMA, etc), 
-            // we will simulate finding a record for demonstration.
-            
-            showToast("Sedang mencari...");
-            
-            setTimeout(() => {
-                // Mock Data Fill
-                document.getElementById('ic').value = query || "800101-14-1234";
-                document.getElementById('nama').value = "Ahmad Bin Abu";
-                document.getElementById('telefon').value = "012-3456789";
-                document.getElementById('emel').value = "ahmad@gov.my";
-                document.getElementById('gred').value = "N41";
-                document.getElementById('kod_ptj').value = "PTJ-101";
-                document.getElementById('department').value = "Jabatan Teknologi Maklumat";
-                
-                showToast("Data dijumpai & diisi!");
-            }, 800);
+           // Redirect to live search input if clicked
+           document.getElementById('global-search').focus();
         }
 
         document.getElementById('data-form').addEventListener('submit', async (e) => {
@@ -656,7 +747,6 @@
                 confirmation: document.getElementById('confirmation').value,
                 notes: document.getElementById('notes').value,
                 submitted_by: currentUser.id
-                // Created_at is handled by DB default
             };
 
             const { error } = await supabase
@@ -667,10 +757,8 @@
                 alert("Ralat menyimpan: " + error.message);
             } else {
                 showToast("Rekod berjaya disimpan!");
-                // Clear form but keep date
                 document.getElementById('data-form').reset();
                 updateDateDisplay();
-                
                 // Reset ReadOnly states
                 ['ic','nama','telefon','emel','gred','kod_ptj','department'].forEach(id => {
                     const el = document.getElementById(id);
@@ -729,7 +817,6 @@
         // --- Export Functions ---
         function exportToExcel() {
             if(currentRecords.length === 0) { alert("Tiada data untuk diexport"); return; }
-            
             const ws = XLSX.utils.json_to_sheet(currentRecords);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Rekod");
@@ -738,10 +825,8 @@
 
         function exportToPDF() {
             if(currentRecords.length === 0) { alert("Tiada data untuk diexport"); return; }
-
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-
             doc.text("Laporan Rekod Log", 14, 15);
             doc.autoTable({
                 head: [['Masa', 'IC', 'Nama', 'Jabatan', 'Status', 'Nota']],
@@ -758,33 +843,70 @@
             doc.save("Rekod_Log.pdf");
         }
 
-        // --- Import Functions ---
+        // --- Import Functions (Record & Master Data) ---
         function triggerImport() {
             document.getElementById('excel-upload').click();
         }
+        
+        function triggerMasterUpload() {
+            document.getElementById('master-data-upload').click();
+        }
 
-        function handleFileUpload(event) {
+        // Handle Master Data Upload (Personnel Table)
+        function handleMasterDataUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            showToast("Sedang memproses fail...");
-
+            showToast("Memproses Data Induk...");
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
-                    const sheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(sheet);
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-                    if (jsonData.length === 0) {
-                        alert("Fail kosong atau format salah.");
-                        return;
-                    }
+                    if (jsonData.length === 0) { alert("Fail kosong."); return; }
 
-                    // Pre-process data to ensure it matches DB structure
-                    // We map common headers or assume keys are correct
+                    // Map Excel columns to Database columns
+                    const recordsToInsert = jsonData.map(row => ({
+                        ic_number: row.ic_number || row.IC || row.ic || '',
+                        nama: row.nama || row.Name || row.Nama || '',
+                        telefon: row.telefon || row.Phone || row.Telefon || '',
+                        emel: row.emel || row.Email || row.Emel || '',
+                        gred: row.gred || row.Grade || row.Gred || '',
+                        kod_ptj: row.kod_ptj || row.KodPTJ || '',
+                        department: row.department || row.Department || row.Jabatan || ''
+                    }));
+
+                    const { error } = await supabase.from('personnel').insert(recordsToInsert);
+                    
+                    if (error) alert("Ralat Import Master Data: " + error.message);
+                    else showToast(`Berjaya muat naik ${recordsToInsert.length} data induk!`);
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Ralat memproses fail Excel.");
+                }
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Handle Record Upload (Rekod Table)
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            showToast("Sedang memproses fail...");
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                    if (jsonData.length === 0) { alert("Fail kosong."); return; }
+
                     const recordsToInsert = jsonData.map(row => ({
                         ic_number: row.ic_number || row.IC || row.ic || '',
                         nama: row.nama || row.Name || row.Nama || '',
@@ -795,26 +917,20 @@
                         department: row.department || row.Department || row.Jabatan || '',
                         notes: row.notes || row.Notes || row.Nota || '',
                         confirmation: row.confirmation || row.Status || 'TIDAK',
-                        submitted_by: currentUser.id // Tag imported rows with current user
+                        submitted_by: currentUser.id
                     }));
 
-                    // Insert into Supabase
-                    const { error } = await supabase
-                        .from('rekod')
-                        .insert(recordsToInsert);
+                    const { error } = await supabase.from('rekod').insert(recordsToInsert);
 
-                    if (error) {
-                        alert("Ralat semasa import: " + error.message);
-                    } else {
+                    if (error) alert("Ralat semasa import: " + error.message);
+                    else {
                         showToast(`Berjaya import ${recordsToInsert.length} rekod!`);
-                        fetchRecords(); // Refresh table
+                        fetchRecords();
                     }
                 } catch (err) {
                     console.error(err);
                     alert("Ralat memproses fail Excel.");
                 }
-                
-                // Reset input so same file can be selected again if needed
                 event.target.value = '';
             };
             reader.readAsArrayBuffer(file);
