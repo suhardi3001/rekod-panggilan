@@ -183,11 +183,16 @@
                 
                 <!-- Search Section -->
                 <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                         <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="search"></i> Carian Live (Master Data)</h2>
-                        <button onclick="triggerMasterUpload()" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-200 transition flex items-center gap-2 border border-blue-200">
-                            <i data-lucide="database-backup" class="w-4 h-4"></i> Import Data Induk
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="triggerMasterUpload()" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-200 transition flex items-center gap-2 border border-blue-200">
+                                <i data-lucide="database-backup" class="w-4 h-4"></i> Import Data Induk
+                            </button>
+                            <button onclick="confirmClearMasterDatabase()" class="bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition flex items-center gap-2 border border-red-200">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i> Padam Data Induk
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Updated Live Search Component -->
@@ -199,8 +204,8 @@
                                 </span>
                                 <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Taip Nama atau IC untuk carian live..." autocomplete="off">
                             </div>
-                            <!-- Manual trigger if needed, though input handles it -->
-                            <button onclick="document.getElementById('global-search').focus()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Cari</button>
+                            <!-- Manual trigger triggers live search logic directly -->
+                            <button onclick="handleLiveSearch(document.getElementById('global-search').value)" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Cari</button>
                         </div>
                         
                         <!-- Search Dropdown Results -->
@@ -368,8 +373,8 @@
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
                 <i data-lucide="alert-triangle" class="text-red-600 w-6 h-6"></i>
             </div>
-            <h3 class="text-lg leading-6 font-bold text-gray-900 mb-2">Amaran Keras</h3>
-            <p class="text-sm text-gray-500 mb-6">
+            <h3 class="text-lg leading-6 font-bold text-gray-900 mb-2" id="modal-title">Amaran Keras</h3>
+            <p class="text-sm text-gray-500 mb-6" id="modal-message">
                 Adakah anda pasti mahu memadam <strong>SEMUA</strong> rekod? <br>
                 Tindakan ini tidak boleh dikembalikan.
             </p>
@@ -377,7 +382,7 @@
                 <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
                     Batal
                 </button>
-                <button onclick="executeClearDatabase()" class="px-4 py-2 bg-red-600 text-white font-bold rounded hover:bg-red-700 shadow-lg">
+                <button id="modal-confirm-btn" onclick="executeClearDatabase()" class="px-4 py-2 bg-red-600 text-white font-bold rounded hover:bg-red-700 shadow-lg">
                     YA, PADAM SEMUA
                 </button>
             </div>
@@ -682,10 +687,93 @@
             showToast(`Anda kini boleh menyunting ${fieldId.toUpperCase()}`);
         }
 
-        // No longer used, replaced by Live Search
-        function performSearch() {
-           // Redirect to live search input if clicked
-           document.getElementById('global-search').focus();
+        function createNewEntry() {
+            // Unlock all fields for manual entry
+            ['ic', 'nama', 'telefon', 'emel', 'gred', 'kod_ptj', 'department'].forEach(id => {
+                enableEdit(id);
+                document.getElementById(id).value = ''; // Clear fields
+            });
+            document.getElementById('ic').focus();
+            document.getElementById('search-results-dropdown').classList.add('hidden');
+            showToast("Sila isi maklumat secara manual.");
+        }
+
+        // ================= LIVE SEARCH FEATURE =================
+        function handleLiveSearch(query) {
+            const dropdown = document.getElementById('search-results-dropdown');
+            
+            // Clear existing timeout
+            if (searchTimeout) clearTimeout(searchTimeout);
+
+            if (!query || query.length < 2) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            // Debounce search by 300ms
+            searchTimeout = setTimeout(async () => {
+                // Show loading state
+                dropdown.classList.remove('hidden');
+                dropdown.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center">Sedang mencari...</div>';
+
+                // Query Supabase 'personnel' table
+                // Using 'ilike' for case-insensitive partial matching
+                const { data, error } = await supabase
+                    .from('personnel')
+                    .select('*')
+                    .or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%`)
+                    .limit(5);
+
+                if (error) {
+                    console.error(error);
+                    dropdown.innerHTML = '<div class="p-3 text-sm text-red-500 text-center">Ralat carian.</div>';
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    dropdown.innerHTML = `
+                        <div class="p-3 text-sm text-gray-500 text-center flex flex-col gap-2">
+                            <span>Tiada rekod dijumpai.</span>
+                            <button onclick="createNewEntry()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-xs w-full">
+                                + Daftar Baru (Manual)
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render Results
+                dropdown.innerHTML = '';
+                data.forEach(person => {
+                    const item = document.createElement('div');
+                    item.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 border-gray-100';
+                    item.innerHTML = `
+                        <div class="font-bold text-gray-800">${person.nama}</div>
+                        <div class="text-xs text-gray-500 flex justify-between mt-1">
+                            <span>IC: ${person.ic_number}</span>
+                            <span>${person.department || ''}</span>
+                        </div>
+                    `;
+                    item.onclick = () => fillFormWithPersonnel(person);
+                    dropdown.appendChild(item);
+                });
+
+            }, 300);
+        }
+
+        function fillFormWithPersonnel(person) {
+            document.getElementById('ic').value = person.ic_number || '';
+            document.getElementById('nama').value = person.nama || '';
+            document.getElementById('telefon').value = person.telefon || '';
+            document.getElementById('emel').value = person.emel || '';
+            document.getElementById('gred').value = person.gred || '';
+            document.getElementById('kod_ptj').value = person.kod_ptj || '';
+            document.getElementById('department').value = person.department || '';
+            
+            // Hide dropdown
+            document.getElementById('search-results-dropdown').classList.add('hidden');
+            document.getElementById('global-search').value = ''; // Clear search
+            showToast("Maklumat telah diisi!");
         }
 
         document.getElementById('data-form').addEventListener('submit', async (e) => {
@@ -813,8 +901,20 @@
             doc.save("Rekod_Log.pdf");
         }
 
-        // --- Clear Database Logic ---
+        // --- Clear Database Logic (Unified Modal) ---
+        let clearActionType = ''; // 'rekod' or 'personnel'
+
         function confirmClearDatabase() {
+            clearActionType = 'rekod';
+            document.getElementById('modal-title').textContent = "Padam Semua REKOD?";
+            document.getElementById('modal-message').innerHTML = "Adakah anda pasti mahu memadam <strong>SEMUA REKOD HARIAN</strong>? <br>Tindakan ini tidak boleh dikembalikan.";
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        function confirmClearMasterDatabase() {
+            clearActionType = 'personnel';
+            document.getElementById('modal-title').textContent = "Padam Data Induk?";
+            document.getElementById('modal-message').innerHTML = "Adakah anda pasti mahu memadam <strong>SEMUA DATA INDUK</strong>? <br>Carian live tidak akan berfungsi sehingga anda upload data baru.";
             document.getElementById('delete-modal').classList.remove('hidden');
         }
 
@@ -824,19 +924,21 @@
 
         async function executeClearDatabase() {
             closeDeleteModal();
-            showToast("Sedang memadam pangkalan data...");
+            showToast("Sedang memadam...");
+            
+            const tableName = clearActionType === 'personnel' ? 'personnel' : 'rekod';
             
             // Delete all records where ID is NOT null (effectively all records)
             const { error } = await supabase
-                .from('rekod')
+                .from(tableName)
                 .delete()
-                .neq('id', '00000000-0000-0000-0000-000000000000'); // Hack to select all rows if policies allow
+                .neq('id', '00000000-0000-0000-0000-000000000000'); // Hack to select all rows
 
             if (error) {
                 alert("Gagal memadam: " + error.message);
             } else {
-                alert("Pangkalan data telah dikosongkan!");
-                fetchRecords();
+                alert(`Pangkalan data (${tableName}) telah dikosongkan!`);
+                if (tableName === 'rekod') fetchRecords();
             }
         }
 
