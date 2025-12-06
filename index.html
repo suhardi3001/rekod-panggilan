@@ -23,7 +23,8 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .hidden-section { display: none; }
+        /* FIX: Added !important to ensure this overrides Tailwind's display: flex */
+        .hidden-section { display: none !important; }
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3b82f6;
@@ -648,6 +649,7 @@
                 document.getElementById('app-layout').classList.remove('hidden-section');
                 document.getElementById('user-display').textContent = currentUser.email;
                 showPage('search'); // Default page is SEARCH
+                window.scrollTo(0,0); // Ensure window scrolls to top
             }, 1000);
         }
 
@@ -668,77 +670,6 @@
                 navRecords.classList.add('bg-blue-900');
                 fetchRecords(); // Load data when tab is clicked
             }
-        }
-
-        // ================= LIVE SEARCH FEATURE =================
-        function handleLiveSearch(query) {
-            const dropdown = document.getElementById('search-results-dropdown');
-            
-            // Clear existing timeout
-            if (searchTimeout) clearTimeout(searchTimeout);
-
-            if (!query || query.length < 2) {
-                dropdown.classList.add('hidden');
-                return;
-            }
-
-            // Debounce search by 300ms
-            searchTimeout = setTimeout(async () => {
-                // Show loading state
-                dropdown.classList.remove('hidden');
-                dropdown.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center">Sedang mencari...</div>';
-
-                // Query Supabase 'personnel' table
-                // Using 'ilike' for case-insensitive partial matching
-                const { data, error } = await supabase
-                    .from('personnel')
-                    .select('*')
-                    .or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%`)
-                    .limit(5);
-
-                if (error) {
-                    console.error(error);
-                    dropdown.innerHTML = '<div class="p-3 text-sm text-red-500 text-center">Ralat carian.</div>';
-                    return;
-                }
-
-                if (!data || data.length === 0) {
-                    dropdown.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center">Tiada rekod dijumpai.</div>';
-                    return;
-                }
-
-                // Render Results
-                dropdown.innerHTML = '';
-                data.forEach(person => {
-                    const item = document.createElement('div');
-                    item.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 border-gray-100';
-                    item.innerHTML = `
-                        <div class="font-bold text-gray-800">${person.nama}</div>
-                        <div class="text-xs text-gray-500 flex justify-between mt-1">
-                            <span>IC: ${person.ic_number}</span>
-                            <span>${person.department || ''}</span>
-                        </div>
-                    `;
-                    item.onclick = () => fillFormWithPersonnel(person);
-                    dropdown.appendChild(item);
-                });
-
-            }, 300);
-        }
-
-        function fillFormWithPersonnel(person) {
-            document.getElementById('ic').value = person.ic_number || '';
-            document.getElementById('nama').value = person.nama || '';
-            document.getElementById('telefon').value = person.telefon || '';
-            document.getElementById('emel').value = person.emel || '';
-            document.getElementById('gred').value = person.gred || '';
-            document.getElementById('kod_ptj').value = person.kod_ptj || '';
-            document.getElementById('department').value = person.department || '';
-            
-            // Hide dropdown
-            document.getElementById('search-results-dropdown').classList.add('hidden');
-            document.getElementById('global-search').value = ''; // Clear search
-            showToast("Maklumat telah diisi!");
         }
 
         // ================= FORM FEATURES =================
