@@ -44,6 +44,10 @@
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-gray-800">Sistem Log Masuk</h1>
                 <p class="text-gray-500 text-sm mt-2">Sila log masuk untuk meneruskan</p>
+                <div id="config-warning" class="hidden mt-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-left text-xs">
+                    <p class="font-bold">Perhatian:</p>
+                    <p>Supabase Keys belum ditetapkan dalam kod. Sila kemaskini fail 'index.html' baris 260.</p>
+                </div>
             </div>
             
             <form id="login-form" class="space-y-4">
@@ -55,12 +59,14 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
                     <input type="password" id="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="********">
                 </div>
-                <div id="login-error" class="text-red-500 text-sm hidden"></div>
+                <div id="login-error" class="text-red-500 text-sm hidden bg-red-100 p-2 rounded border border-red-200"></div>
                 <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Log Masuk</button>
             </form>
+            <!-- Registration disabled
             <div class="mt-4 text-center">
                  <button onclick="toggleSignUp()" class="text-sm text-blue-500 hover:underline">Tiada akaun? Daftar disini</button>
             </div>
+            -->
         </div>
     </div>
 
@@ -252,9 +258,18 @@
 
     <script>
         // ================= CONFIGURATION =================
-        // REPLACE THESE WITH YOUR ACTUAL SUPABASE KEYS
+        // IMPORTANT: Replace these two lines with your actual keys from Supabase Dashboard
         const supabaseUrl = 'https://objxfgosatmasjjifkkg.supabase.co'; 
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw';
+
+        // Initial check for configuration
+        if (supabaseUrl === 'YOUR_SUPABASE_PROJECT_URL' || supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY') {
+            document.addEventListener('DOMContentLoaded', () => {
+                const warningDiv = document.getElementById('config-warning');
+                warningDiv.classList.remove('hidden');
+                alert("RALAT CONFIG: Sila buka kod dan masukkan 'supabaseUrl' dan 'supabaseAnonKey' anda.");
+            });
+        }
 
         const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
         
@@ -275,12 +290,20 @@
 
         // ================= AUTHENTICATION LOGIC =================
         async function checkAuth() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                currentUser = session.user;
-                showApp();
-            } else {
-                showLogin();
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) {
+                    console.error("Auth Session Error:", error);
+                    return;
+                }
+                if (session) {
+                    currentUser = session.user;
+                    showApp();
+                } else {
+                    showLogin();
+                }
+            } catch (err) {
+                console.error("Unexpected Auth Error:", err);
             }
         }
 
@@ -289,6 +312,15 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('login-error');
+            
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = "";
+
+            if (supabaseUrl.includes('YOUR_SUPABASE')) {
+                errorDiv.textContent = "Ralat: Supabase Keys belum dikemaskini dalam kod.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
 
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
@@ -296,7 +328,8 @@
             });
 
             if (error) {
-                errorDiv.textContent = "Login Gagal: " + error.message;
+                console.error("Login Error:", error);
+                errorDiv.textContent = "Log Masuk Gagal: " + error.message;
                 errorDiv.classList.remove('hidden');
             } else {
                 currentUser = data.user;
@@ -312,16 +345,27 @@
         async function toggleSignUp() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            if(!email || !password) {
-                alert("Sila masukkan email dan password untuk mendaftar.");
+            
+            if (supabaseUrl.includes('YOUR_SUPABASE')) {
+                alert("Ralat: Sila kemaskini Supabase Keys dalam kod dahulu.");
                 return;
             }
+
+            if(!email || !password) {
+                alert("Sila masukkan email dan password di dalam kotak untuk mendaftar.");
+                return;
+            }
+            
             const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: password,
             });
-            if(error) alert(error.message);
-            else alert("Pendaftaran berjaya! Sila semak emel anda atau log masuk.");
+            
+            if(error) {
+                alert("Gagal Mendaftar: " + error.message);
+            } else {
+                alert("Pendaftaran berjaya! Jika anda tidak dapat log masuk, sila semak email anda untuk pengesahan akaun.");
+            }
         }
 
         document.getElementById('login-form').addEventListener('submit', handleLogin);
