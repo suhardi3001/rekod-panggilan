@@ -202,7 +202,7 @@
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                                     <i data-lucide="search" class="w-5 h-5"></i>
                                 </span>
-                                <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Taip Nama atau IC untuk carian live..." autocomplete="off">
+                                <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cari Nama, IC, Telefon, Emel, PTJ atau Jabatan..." autocomplete="off">
                             </div>
                             <!-- Manual trigger triggers live search logic directly -->
                             <button onclick="handleLiveSearch(document.getElementById('global-search').value)" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Cari</button>
@@ -290,7 +290,7 @@
                             
                             <!-- Dropdown -->
                             <div class="md:col-span-1">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Status Selesai</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status Pengesahan</label>
                                 <select id="confirmation" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
                                     <option value="YA">YA</option>
                                     <option value="TIDAK">TIDAK</option>
@@ -300,7 +300,7 @@
 
                         <!-- Notes Box -->
                         <div class="mt-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Perkara / Masalah</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nota Tambahan</label>
                             <textarea id="notes" rows="3" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Masukkan sebarang nota disini..."></textarea>
                         </div>
 
@@ -317,7 +317,7 @@
             <div id="records-page" class="hidden-section space-y-6">
                 <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800"><i data-lucide="database"></i> Rekod Panggilan dan Emel HELPDESK iGFMAS</h2>
+                        <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800"><i data-lucide="database"></i> Rekod Panggilan dan Emel IGFMAS</h2>
                         <div class="flex flex-wrap gap-2 items-center">
                             
                             <button onclick="triggerImport()" class="bg-gray-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 flex items-center gap-2">
@@ -347,8 +347,8 @@
                                     <th class="py-3 px-4 text-left">IC</th>
                                     <th class="py-3 px-4 text-left">Nama</th>
                                     <th class="py-3 px-4 text-left">Jabatan</th>
-                                    <th class="py-3 px-4 text-left">Status</th>
-                                    <th class="py-3 px-4 text-left">Nota</th>
+                                    <th class="py-3 px-4 text-left">Status Selesai</th>
+                                    <th class="py-3 px-4 text-left">Perkara / Masalah/th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 font-light" id="table-body">
@@ -717,11 +717,11 @@
                 dropdown.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center">Sedang mencari...</div>';
 
                 // Query Supabase 'personnel' table
-                // Using 'ilike' for case-insensitive partial matching
+                // Using 'ilike' for case-insensitive partial matching across multiple columns
                 const { data, error } = await supabase
                     .from('personnel')
                     .select('*')
-                    .or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%`)
+                    .or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%,kod_ptj.ilike.%${query}%,telefon.ilike.%${query}%,emel.ilike.%${query}%,department.ilike.%${query}%`)
                     .limit(5);
 
                 if (error) {
