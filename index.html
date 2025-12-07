@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod Log</title>
+    <title>Sistem Rekod Log & Pinjaman</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -162,7 +162,7 @@
                         <div class="ml-10 flex items-baseline space-x-4">
                             <button onclick="showPage('search')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 bg-blue-900 transition" id="nav-search">Carian & Input</button>
                             <button onclick="showPage('records')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition" id="nav-records">Pangkalan Data Rekod</button>
-
+                            <button onclick="showPage('loan')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition" id="nav-loan">Pinjaman ICT</button>
                         </div>
                     </div>
                     <div>
@@ -176,8 +176,13 @@
         <main class="flex-grow p-6 max-w-7xl w-full mx-auto">
             
             <!-- HIDDEN FILE INPUTS (Global) -->
-            <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleFileUpload(event)">
-            <input type="file" id="master-data-upload" accept=".xlsx, .xls" class="hidden" onchange="handleMasterDataUpload(event)">
+            <input type="file" id="excel-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+            <input type="file" id="master-data-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleMasterDataUpload(event)">
+            
+            <!-- HIDDEN FILE INPUTS (For Loan System) -->
+            <input type="file" id="loan-user-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanUserUpload(event)">
+            <input type="file" id="loan-inventory-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanInventoryUpload(event)">
+            <input type="file" id="loan-records-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanRecordsUpload(event)">
 
             <!-- ================= SEARCH & INPUT PAGE ================= -->
             <div id="search-page" class="space-y-6">
@@ -300,11 +305,10 @@
                             </div>
                         </div>
 
-                        <!-- NEW: Radio Button & Dynamic Dropdown for Issues -->
+                        <!-- System Selection & Issue (New) -->
                         <div class="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                             <label class="block text-sm font-bold text-gray-800 mb-3">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
                             
-                            <!-- Radio Buttons Grid -->
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="system-radio-group">
                                 <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
                                     <input type="radio" name="system_type" value="ecp450" class="form-radio text-blue-600">
@@ -336,7 +340,6 @@
                                 </label>
                             </div>
 
-                            <!-- Dynamic Issue Dropdown (Hidden initially) -->
                             <div id="issue-dropdown-container" class="hidden animate-fade-in">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Isu <span class="text-red-500">*</span></label>
                                 <select id="issue-dropdown" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
@@ -344,7 +347,6 @@
                                 </select>
                             </div>
 
-                            <!-- Other Issue Textbox (Hidden initially) -->
                             <div id="other-issue-container" class="mt-3 hidden animate-fade-in">
                                 <input type="text" id="other-issue-input" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sila nyatakan masalah lain secara spesifik...">
                             </div>
@@ -361,30 +363,19 @@
 
             <!-- ================= REKOD DATABASE PAGE ================= -->
             <div id="records-page" class="hidden-section space-y-6">
+                <!-- Records Page Content (Same as before) -->
                 <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800"><i data-lucide="database"></i> Rekod Panggilan dan Emel IGFMAS</h2>
                         <div class="flex flex-wrap gap-2 items-center">
-                            
-                            <button onclick="triggerImport()" class="bg-gray-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 flex items-center gap-2">
-                                <i data-lucide="upload"></i> Import Rekod
-                            </button>
-                            <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center gap-2">
-                                <i data-lucide="sheet"></i> Export Excel
-                            </button>
-                            <button onclick="exportToPDF()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 flex items-center gap-2">
-                                <i data-lucide="file-down"></i> Export PDF
-                            </button>
-                            <button onclick="fetchRecords()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200">
-                                <i data-lucide="refresh-cw"></i>
-                            </button>
+                            <button onclick="triggerImport()" class="bg-gray-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 flex items-center gap-2"><i data-lucide="upload"></i> Import Rekod</button>
+                            <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center gap-2"><i data-lucide="sheet"></i> Export Excel</button>
+                            <button onclick="exportToPDF()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 flex items-center gap-2"><i data-lucide="file-down"></i> Export PDF</button>
+                            <button onclick="fetchRecords()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200"><i data-lucide="refresh-cw"></i></button>
                             <div class="border-l border-gray-300 mx-1 h-8"></div>
-                            <button onclick="confirmClearDatabase()" class="bg-red-100 text-red-700 border border-red-200 px-3 py-2 rounded-lg text-sm hover:bg-red-200 flex items-center gap-2" title="Padam semua data">
-                                <i data-lucide="trash-2"></i> Kosongkan
-                            </button>
+                            <button onclick="confirmClearDatabase()" class="bg-red-100 text-red-700 border border-red-200 px-3 py-2 rounded-lg text-sm hover:bg-red-200 flex items-center gap-2" title="Padam semua data"><i data-lucide="trash-2"></i> Kosongkan</button>
                         </div>
                     </div>
-
                     <div class="overflow-x-auto rounded-lg border border-gray-200">
                         <table class="min-w-full bg-white text-sm" id="records-table">
                             <thead class="bg-gray-100 text-gray-700 uppercase leading-normal">
@@ -398,10 +389,168 @@
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 font-light" id="table-body">
-                                <!-- Data will be injected here -->
+                                <!-- Data injected here -->
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- ================= PINJAMAN ICT PAGE ================= -->
+            <div id="loan-page" class="hidden-section space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                    <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800 mb-6"><i data-lucide="monitor-smartphone"></i> Sistem Pinjaman Peranti</h2>
+                    
+                    <!-- Sub-tabs for Loan System -->
+                    <div class="flex border-b mb-6">
+                        <button onclick="switchLoanTab('loan-tab-borrow')" id="btn-loan-borrow" class="px-6 py-2 text-blue-600 border-b-2 border-blue-600 font-medium">Pinjam</button>
+                        <button onclick="switchLoanTab('loan-tab-return')" id="btn-loan-return" class="px-6 py-2 text-gray-500 hover:text-blue-600 font-medium">Pulang</button>
+                        <button onclick="switchLoanTab('loan-tab-admin')" id="btn-loan-admin" class="px-6 py-2 text-gray-500 hover:text-blue-600 font-medium">Admin</button>
+                        <!-- New Tab Button -->
+                        <button onclick="switchLoanTab('loan-tab-history')" id="btn-loan-history" class="px-6 py-2 text-gray-500 hover:text-blue-600 font-medium">Rekod Pinjaman</button>
+                    </div>
+
+                    <!-- 1. PINJAM TAB -->
+                    <div id="loan-tab-borrow" class="loan-tab-content">
+                        <form id="loanForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Pengguna (User BA)</label>
+                                    <input type="text" id="loanUserName" list="userList" class="w-full px-3 py-2 border rounded-lg" placeholder="Cari nama..." required>
+                                    <datalist id="userList"></datalist>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Peranti</label>
+                                    <select id="deviceSelect" class="w-full px-3 py-2 border rounded-lg" required>
+                                        <option value="" disabled selected>Pilih Peranti...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tarikh Mula</label>
+                                    <input type="date" id="loanStartDate" class="w-full px-3 py-2 border rounded-lg" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tarikh Tamat</label>
+                                    <input type="date" id="loanEndDate" class="w-full px-3 py-2 border rounded-lg" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Kegunaan</label>
+                                <select id="usageType" class="w-full px-3 py-2 border rounded-lg" required>
+                                    <option value="" disabled selected>Sila Pilih...</option>
+                                    <option value="Kegunaan Dalaman">Kegunaan Dalaman (Pejabat/Kampus)</option>
+                                    <option value="Kegunaan Luar">Kegunaan Luar (Remote/Field)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Butiran / Tujuan</label>
+                                <textarea id="usageDetails" rows="2" class="w-full px-3 py-2 border rounded-lg" placeholder="Contoh: Mesyuarat Projek A"></textarea>
+                            </div>
+                            <button type="button" onclick="submitLoan()" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition">Hantar Permohonan</button>
+                        </form>
+                    </div>
+
+                    <!-- 2. PULANG TAB -->
+                    <div id="loan-tab-return" class="loan-tab-content hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                            <h5 class="text-lg font-bold text-gray-800 mb-2">Pulangkan Peranti</h5>
+                            <p class="text-sm text-gray-500 mb-4">Pilih peranti yang ingin dipulangkan dari senarai di bawah.</p>
+                            <select id="returnSelect" class="w-full max-w-md mx-auto px-3 py-2 border rounded-lg mb-4">
+                                <option value="" disabled selected>Pilih Peranti Dipinjam...</option>
+                            </select>
+                            <button onclick="submitReturn()" class="bg-green-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-green-700 transition">Sahkan Pulangan</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. ADMIN TAB -->
+                    <div id="loan-tab-admin" class="loan-tab-content hidden">
+                        <!-- BULK UPLOAD SECTION -->
+                        <div class="mb-8 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                            <h6 class="font-bold text-yellow-800 mb-3 flex items-center gap-2"><i data-lucide="upload-cloud"></i> Bulk Import (Excel)</h6>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="triggerLoanUpload('user')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2">
+                                    <i data-lucide="users"></i> Upload Users
+                                </button>
+                                <button onclick="triggerLoanUpload('inventory')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2">
+                                    <i data-lucide="monitor"></i> Upload Inventory
+                                </button>
+                                <button onclick="triggerLoanUpload('records')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2">
+                                    <i data-lucide="file-clock"></i> Upload History
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="border p-4 rounded-lg bg-gray-50">
+                                <h6 class="font-bold mb-3">Tambah Pengguna Baru</h6>
+                                <input id="newUserName" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Nama Penuh">
+                                <button onclick="addUser()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800">Tambah Pengguna</button>
+                            </div>
+                            <div class="border p-4 rounded-lg bg-gray-50">
+                                <h6 class="font-bold mb-3">Tambah Peranti Baru</h6>
+                                <input id="newTag" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Tag Aset (Cth: NB-01)">
+                                <select id="newType" class="w-full px-3 py-2 border rounded-lg mb-2">
+                                    <option>Notebook</option><option>Projector</option><option>HDMI Cable</option><option>Webcam</option>
+                                </select>
+                                <input id="newSerial" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="No. Siri">
+                                <button onclick="addDevice()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800">Tambah Peranti</button>
+                            </div>
+                        </div>
+                        
+                        <!-- List of current loans -->
+                        <div class="mt-8">
+                            <h6 class="font-bold mb-3">Senarai Pinjaman Aktif</h6>
+                            <div class="overflow-x-auto rounded border">
+                                <table class="min-w-full text-sm" id="active-loans-table">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="p-2 text-left">Peminjam</th>
+                                            <th class="p-2 text-left">Peranti</th>
+                                            <th class="p-2 text-left">Tamat</th>
+                                            <th class="p-2 text-left">Tujuan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="active-loans-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. REKOD PINJAMAN (HISTORY) TAB -->
+                    <div id="loan-tab-history" class="loan-tab-content hidden">
+                        <div class="mb-4 flex justify-between items-center">
+                            <h6 class="font-bold text-gray-700">Sejarah Pinjaman</h6>
+                            <div class="flex gap-2">
+                                <button onclick="exportLoanHistoryToExcel()" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700 flex items-center gap-1">
+                                    <i data-lucide="sheet" class="w-3 h-3"></i> Excel
+                                </button>
+                                <button onclick="exportLoanHistoryToPDF()" class="bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 flex items-center gap-1">
+                                    <i data-lucide="file-down" class="w-3 h-3"></i> PDF
+                                </button>
+                                <button onclick="loadLoanHistory()" class="bg-gray-200 px-3 py-1.5 rounded hover:bg-gray-300 text-xs flex items-center gap-1">
+                                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto rounded border border-gray-200">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-100 text-gray-700">
+                                    <tr>
+                                        <th class="p-3 text-left">Tarikh Mohon</th>
+                                        <th class="p-3 text-left">Peminjam</th>
+                                        <th class="p-3 text-left">Peranti</th>
+                                        <th class="p-3 text-left">Tempoh (Mula - Tamat)</th>
+                                        <th class="p-3 text-left">Tarikh Pulang (Sebenar)</th>
+                                        <th class="p-3 text-left">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="loan-history-body" class="bg-white">
+                                    <!-- History data injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -499,6 +648,7 @@
         // ================= STATE MANAGEMENT =================
         let currentUser = null;
         let searchTimeout = null;
+        let currentLoanHistory = []; // Store history for export
 
         // ================= ISSUES DATA STRUCTURE =================
         const issueOptions = {
@@ -821,18 +971,23 @@
             // Toggle active nav state
             const navSearch = document.getElementById('nav-search');
             const navRecords = document.getElementById('nav-records');
+            const navLoan = document.getElementById('nav-loan');
             
+            // Reset classes
+            [navSearch, navRecords, navLoan].forEach(btn => btn.classList.remove('bg-blue-900'));
+            document.querySelectorAll('main > div').forEach(div => div.classList.add('hidden-section'));
+
             if (pageId === 'search') {
                 document.getElementById('search-page').classList.remove('hidden-section');
-                document.getElementById('records-page').classList.add('hidden-section');
                 navSearch.classList.add('bg-blue-900');
-                navRecords.classList.remove('bg-blue-900');
-            } else {
-                document.getElementById('search-page').classList.add('hidden-section');
+            } else if (pageId === 'records') {
                 document.getElementById('records-page').classList.remove('hidden-section');
-                navSearch.classList.remove('bg-blue-900');
                 navRecords.classList.add('bg-blue-900');
-                fetchRecords(); // Load data when tab is clicked
+                fetchRecords(); 
+            } else if (pageId === 'loan') {
+                document.getElementById('loan-page').classList.remove('hidden-section');
+                navLoan.classList.add('bg-blue-900');
+                loadLoanData();
             }
         }
 
@@ -984,7 +1139,8 @@
                 // Reset custom inputs manually
                 document.getElementById('issue-dropdown-container').classList.add('hidden');
                 document.getElementById('other-issue-container').classList.add('hidden');
-                
+                document.querySelectorAll('input[name="system_type"]').forEach(r => r.checked = false); // Clear radios
+
                 updateDateDisplay();
                 // Reset ReadOnly states
                 ['ic','nama','telefon','emel','gred','kod_ptj','department'].forEach(id => {
@@ -1144,13 +1300,13 @@
             }
         }
 
-        // --- Import Functions (Record & Master Data) ---
-        function triggerImport() {
-            document.getElementById('excel-upload').click();
-        }
-        
-        function triggerMasterUpload() {
-            document.getElementById('master-data-upload').click();
+        // --- Import Functions (Record & Master Data & Loan System) ---
+        function triggerImport() { document.getElementById('excel-upload').click(); }
+        function triggerMasterUpload() { document.getElementById('master-data-upload').click(); }
+        function triggerLoanUpload(type) {
+            if(type === 'user') document.getElementById('loan-user-upload').click();
+            if(type === 'inventory') document.getElementById('loan-inventory-upload').click();
+            if(type === 'records') document.getElementById('loan-records-upload').click();
         }
 
         // Handle Master Data Upload (Personnel Table)
@@ -1235,6 +1391,356 @@
                 event.target.value = '';
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // Handle Loan Users Upload (FIXED FOR SIMPLE CSV/XLSX)
+        function handleLoanUserUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet);
+                    
+                    // Robust parser: Handles rows where key is "name", "Name", "NAME" or even just value if no header
+                    const inserts = [];
+                    json.forEach(r => {
+                        // Attempt to find a key containing "name"
+                        let nameVal = null;
+                        const keys = Object.keys(r);
+                        
+                        // 1. Check strict key match
+                        if(r.name) nameVal = r.name;
+                        else if(r.Name) nameVal = r.Name;
+                        else if(r.Nama) nameVal = r.Nama;
+                        // 2. Fuzzy search
+                        else {
+                            const fuzzyKey = keys.find(k => k.toLowerCase().includes('name') || k.toLowerCase().includes('nama'));
+                            if(fuzzyKey) nameVal = r[fuzzyKey];
+                            // 3. Fallback: Take first column if it looks like a string
+                            else if (keys.length > 0 && typeof r[keys[0]] === 'string') nameVal = r[keys[0]];
+                        }
+
+                        if (nameVal && typeof nameVal === 'string' && nameVal.trim().length > 0) {
+                            inserts.push({ name: nameVal.trim() });
+                        }
+                    });
+
+                    if(inserts.length === 0) {
+                        alert("Tiada data pengguna dijumpai. Pastikan fail ada header 'Name' atau 'Nama'.");
+                        return;
+                    }
+
+                    const { error } = await supabase.from('user_ba').insert(inserts);
+                    if(error) alert("Ralat Upload: " + error.message);
+                    else { alert(`Berjaya! ${inserts.length} pengguna telah ditambah.`); loadLoanData(); }
+                } catch(err) { 
+                    console.error(err);
+                    alert("Ralat memproses fail Excel."); 
+                }
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Handle Loan Inventory Upload
+        function handleLoanInventoryUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet);
+                    // Map assumes Tag, Type, Serial columns
+                    const inserts = json.map(r => ({ 
+                        tag: r.Tag || r.tag, 
+                        type: r.Type || r.type || r.Jenis,
+                        serial: r.Serial || r.serial || r.Siri,
+                        status: 'Tersedia'
+                    }));
+                    const { error } = await supabase.from('device_inventory').insert(inserts);
+                    if(error) alert(error.message);
+                    else { alert(`Success! ${inserts.length} devices added.`); loadLoanData(); }
+                } catch(err) { alert("Error parsing excel"); }
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // Handle Loan Records Upload
+        function handleLoanRecordsUpload(event) {
+             const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet);
+                    
+                    // Map Excel to loan records
+                    const inserts = json.map(r => ({ 
+                        user_name: r.Peminjam || r.User || r.user_name,
+                        device_tag: r.Tag || r.Device || r.device_tag,
+                        start_date: r.Start || r.start_date || r.Mula,
+                        end_date: r.End || r.end_date || r.Tamat,
+                        usage_type: r.Type || r.usage_type || 'Kegunaan Dalaman',
+                        status: r.Status || r.status || 'Active'
+                    }));
+                    
+                    const { error } = await supabase.from('rekod_pinjaman').insert(inserts);
+                    if(error) alert(error.message);
+                    else { alert(`Success! ${inserts.length} loan records added.`); loadLoanData(); }
+                } catch(err) { alert("Error parsing excel"); }
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+
+        // ================= LOAN SYSTEM LOGIC =================
+        async function loadLoanData() {
+            // 1. Fetch Users from 'user_ba'
+            const { data: users } = await supabase.from('user_ba').select('name').order('name');
+            const uList = document.getElementById('userList');
+            uList.innerHTML = '';
+            if(users) users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.name;
+                uList.appendChild(opt);
+            });
+
+            // 2. Fetch Available Devices
+            const { data: devices } = await supabase.from('device_inventory').select('*').eq('status', 'Tersedia');
+            const dSel = document.getElementById('deviceSelect');
+            dSel.innerHTML = '<option value="" disabled selected>Pilih Peranti...</option>';
+            if(devices) devices.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.tag;
+                opt.text = `${d.tag} - ${d.type} (${d.serial})`;
+                dSel.appendChild(opt);
+            });
+
+            // 3. Fetch Rented Devices for Return
+            const { data: rented } = await supabase.from('device_inventory').select('*').eq('status', 'Dipinjam');
+            const rSel = document.getElementById('returnSelect');
+            rSel.innerHTML = '<option value="" disabled selected>Pilih Peranti Dipinjam...</option>';
+            if(rented) rented.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.tag;
+                opt.text = `${d.tag} - ${d.type}`;
+                rSel.appendChild(opt);
+            });
+
+            // 4. Fetch Active Loans for Admin Table
+            const { data: loans } = await supabase.from('rekod_pinjaman').select('*').eq('status', 'Active');
+            const tbody = document.getElementById('active-loans-body');
+            tbody.innerHTML = '';
+            if(loans) loans.forEach(l => {
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-2">${l.user_name}</td>
+                        <td class="p-2">${l.device_tag}</td>
+                        <td class="p-2">${l.end_date}</td>
+                        <td class="p-2">${l.usage_details || '-'}</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        async function loadLoanHistory() {
+            const { data: loans } = await supabase.from('rekod_pinjaman').select('*').order('created_at', { ascending: false });
+            currentLoanHistory = loans || []; // Store for export
+            const tbody = document.getElementById('loan-history-body');
+            tbody.innerHTML = '';
+            
+            if(!loans || loans.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Tiada rekod pinjaman.</td></tr>';
+                return;
+            }
+            
+            loans.forEach(l => {
+                const applicationDate = l.created_at ? new Date(l.created_at).toLocaleString() : '-'; // Tarikh Mohon
+                const returnDate = l.return_date ? new Date(l.return_date).toLocaleString() : '-'; // Tarikh Pulang (Sebenar)
+                const statusClass = l.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">${applicationDate}</td>
+                        <td class="p-3 font-medium">${l.user_name}</td>
+                        <td class="p-3">${l.device_tag}</td>
+                        <td class="p-3">${l.start_date} - ${l.end_date}</td>
+                        <td class="p-3">${returnDate}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${statusClass}">${l.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+        
+        // Export Functions for Loan History
+        function exportLoanHistoryToExcel() {
+            if(!currentLoanHistory || currentLoanHistory.length === 0) { alert("Tiada data untuk diexport"); return; }
+            
+            const cleanData = currentLoanHistory.map(r => ({
+                "Tarikh Mohon": r.created_at ? new Date(r.created_at).toLocaleString() : '-',
+                "Peminjam": r.user_name,
+                "Peranti": r.device_tag,
+                "Tarikh Mula": r.start_date,
+                "Tarikh Tamat": r.end_date,
+                "Tarikh Pulang (Sebenar)": r.return_date ? new Date(r.return_date).toLocaleString() : '-',
+                "Status": r.status,
+                "Tujuan": r.usage_details
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(cleanData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sejarah Pinjaman");
+            XLSX.writeFile(wb, "Rekod_Pinjaman_ICT.xlsx");
+        }
+        
+        function exportLoanHistoryToPDF() {
+            if(!currentLoanHistory || currentLoanHistory.length === 0) { alert("Tiada data untuk diexport"); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Laporan Sejarah Pinjaman ICT", 14, 15);
+            doc.autoTable({
+                head: [['Tarikh Mohon', 'Peminjam', 'Peranti', 'Tempoh', 'Tarikh Pulang', 'Status']],
+                body: currentLoanHistory.map(r => [
+                    r.created_at ? new Date(r.created_at).toLocaleDateString() : '-',
+                    r.user_name,
+                    r.device_tag,
+                    `${r.start_date} - ${r.end_date}`,
+                    r.return_date ? new Date(r.return_date).toLocaleDateString() : '-',
+                    r.status
+                ]),
+                startY: 20
+            });
+            doc.save("Rekod_Pinjaman_ICT.pdf");
+        }
+
+        function switchLoanTab(tabId) {
+            document.querySelectorAll('.loan-tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Reset button styles
+            ['btn-loan-borrow', 'btn-loan-return', 'btn-loan-admin', 'btn-loan-history'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                btn.classList.add('text-gray-500');
+            });
+            
+            // Set active button style
+            const activeBtnId = tabId.replace('loan-tab-', 'btn-loan-');
+            const activeBtn = document.getElementById(activeBtnId);
+            activeBtn.classList.remove('text-gray-500');
+            activeBtn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            
+            // Load history if needed
+            if(tabId === 'loan-tab-history') {
+                loadLoanHistory();
+            }
+        }
+
+        async function submitLoan() {
+            const userName = document.getElementById('loanUserName').value;
+            const deviceTag = document.getElementById('deviceSelect').value;
+            const startDate = document.getElementById('loanStartDate').value;
+            const endDate = document.getElementById('loanEndDate').value;
+            const usageType = document.getElementById('usageType').value;
+            const details = document.getElementById('usageDetails').value;
+
+            if(!userName || !deviceTag || !startDate || !endDate || !usageType) {
+                alert("Sila isi semua maklumat mandatori.");
+                return;
+            }
+
+            // 1. Create Loan Record (Supabase automatically adds created_at timestamp)
+            const { error: loanError } = await supabase.from('rekod_pinjaman').insert([{
+                user_name: userName,
+                device_tag: deviceTag,
+                start_date: startDate,
+                end_date: endDate,
+                usage_type: usageType,
+                usage_details: details,
+                status: 'Active'
+            }]);
+
+            if(loanError) {
+                alert("Ralat pinjaman: " + loanError.message);
+                return;
+            }
+
+            // 2. Update Device Status
+            await supabase.from('device_inventory').update({ status: 'Dipinjam' }).eq('tag', deviceTag);
+
+            alert("Pinjaman berjaya direkodkan! (Tarikh & Masa dicatatkan)");
+            document.getElementById('loanForm').reset();
+            loadLoanData(); // Refresh lists
+        }
+
+        async function submitReturn() {
+            const tag = document.getElementById('returnSelect').value;
+            if(!tag) { alert("Sila pilih peranti."); return; }
+
+            // 1. Mark loan as Returned with explicit current timestamp
+            // Find active loan for this device
+            const { data: loan } = await supabase.from('rekod_pinjaman')
+                .select('id')
+                .eq('device_tag', tag)
+                .eq('status', 'Active')
+                .single();
+
+            if(loan) {
+                await supabase.from('rekod_pinjaman').update({ 
+                    status: 'Returned', 
+                    return_date: new Date().toISOString() // Records current date/time
+                }).eq('id', loan.id);
+            }
+
+            // 2. Update Device Status
+            await supabase.from('device_inventory').update({ status: 'Tersedia' }).eq('tag', tag);
+
+            alert("Peranti berjaya dipulangkan! (Tarikh & Masa dicatatkan)");
+            loadLoanData();
+        }
+
+        async function addUser() {
+            const name = document.getElementById('newUserName').value;
+            if(!name) return;
+            const { error } = await supabase.from('user_ba').insert([{ name }]);
+            if(error) alert("Ralat: " + error.message);
+            else {
+                alert("Pengguna ditambah!");
+                document.getElementById('newUserName').value = '';
+                loadLoanData();
+            }
+        }
+
+        async function addDevice() {
+            const tag = document.getElementById('newTag').value;
+            const type = document.getElementById('newType').value;
+            const serial = document.getElementById('newSerial').value;
+            
+            if(!tag || !serial) return;
+
+            const { error } = await supabase.from('device_inventory').insert([{
+                tag, type, serial, status: 'Tersedia'
+            }]);
+
+            if(error) alert("Ralat: " + error.message);
+            else {
+                alert("Peranti ditambah!");
+                document.getElementById('newTag').value = '';
+                document.getElementById('newSerial').value = '';
+                loadLoanData();
+            }
         }
 
         // ================= UTILS =================
