@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Rekod Log & Pinjaman</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- SheetJS (Excel Export/Import) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     
-    <!-- jsPDF (PDF Export) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
@@ -49,103 +44,122 @@
             overflow-y: auto;
             border: 1px solid #333;
             width: 100%;
-            max-width: 100%; /* Responsive width */
+            max-width: 100%;
         }
 
         /* --- TABLE STYLES FOR RESPONSIVENESS --- */
         .table-container {
             width: 100%;
-            overflow-x: auto; /* Enable horizontal scroll on small screens */
+            overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
         table {
             width: 100%;
-            min-width: 800px; /* Ensure table doesn't squish too much */
+            min-width: 800px;
             border-collapse: collapse;
         }
         th, td {
-            white-space: normal !important; /* Allow text wrapping */
+            white-space: normal !important;
             word-wrap: break-word; 
             overflow-wrap: break-word;
             vertical-align: top;
             padding: 0.75rem;
         }
+
+        /* --- LIQUID ANIMATION STYLES (NEW) --- */
         
-        /* --- ROPE ANIMATION STYLES --- */
-        .rope-container {
-            width: 200px;
-            height: 60px;
-            margin: 0 auto 10px;
-            position: relative;
+        /* The Transition Overlay (Hidden by default) */
+        #liquid-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: #1e40af; /* Blue-800 */
+            z-index: 9999;
+            pointer-events: none;
+            transition: height 0.8s cubic-bezier(0.65, 0, 0.35, 1);
         }
-        .rope-path {
-            fill: none;
-            stroke: #9ca3af; /* Gray-400 */
-            stroke-width: 6;
-            stroke-linecap: round;
-            transition: all 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy transition */
-        }
-        .knot-path {
-            fill: none;
-            stroke: #3b82f6; /* Blue-500 */
-            stroke-width: 6;
-            stroke-linecap: round;
-            opacity: 0;
-            transform-origin: center;
-            transform: scale(0.5);
-            transition: all 0.5s ease-out 1s; /* Delays until ropes meet */
+        #liquid-overlay.active {
+            height: 100%;
         }
 
-        /* State: Connected */
-        .connected .rope-left {
-            transform: translateX(35px); /* Move right */
-            stroke: #3b82f6;
+        /* The Button Styling */
+        .liquid-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
-        .connected .rope-right {
-            transform: translateX(-35px); /* Move left */
-            stroke: #3b82f6;
+        
+        /* State: Melting (Loading) */
+        .liquid-btn.melting {
+            width: 50px !important; /* Shrink to circle matching height */
+            border-radius: 50% !important;
+            color: transparent !important; /* Hide text */
+            background-color: #e0f2fe; /* Light Blue bg */
+            pointer-events: none;
+            padding: 0 !important;
         }
-        .connected .knot-path {
+
+        .liquid-btn.melting #btn-text {
+            display: none;
+        }
+
+        /* The Wave inside the button */
+        .btn-wave {
+            position: absolute;
+            bottom: -50%; /* Start low */
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-color: #3b82f6;
+            border-radius: 40%;
+            opacity: 0;
+            transform: rotate(0deg);
+            transition: opacity 0.3s;
+            z-index: 0;
+        }
+
+        /* Animate the wave when melting */
+        .liquid-btn.melting .btn-wave {
             opacity: 1;
-            transform: scale(1);
+            animation: spin-wave 2s linear infinite, rise-wave 10s linear forwards;
+            bottom: 0; 
         }
-        .connected-text {
-            color: #3b82f6;
-            font-weight: bold;
-            transition: color 0.5s;
+
+        @keyframes spin-wave {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Simulates "loading" progress */
+        @keyframes rise-wave {
+            0% { bottom: -60%; }
+            100% { bottom: -10%; }
         }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <!-- ================= AUTHENTICATION / LOGIN PAGE ================= -->
-    <div id="login-page" class="min-h-screen flex flex-col items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mx-auto">
-            
-            <!-- Connection Gauge / Rope Animation -->
-            <div id="connection-gauge" class="rope-container">
-                <svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Left Rope (Approaches from left) -->
-                    <path class="rope-path rope-left" d="M -10 30 C 20 40, 40 20, 75 30" />
-                    <!-- Right Rope (Approaches from right) -->
-                    <path class="rope-path rope-right" d="M 210 30 C 180 20, 160 40, 125 30" />
-                    <!-- The Knot (Appears in center) -->
-                    <path class="knot-path" d="M 85 30 Q 100 15 115 30 Q 100 45 85 30" />
-                    <path class="knot-path" d="M 100 20 L 100 40" />
-                </svg>
-                <div class="text-center text-xs text-gray-400 mt-[-5px]" id="connection-status">Menunggu Sambungan...</div>
-            </div>
+    <div id="liquid-overlay">
+        <div class="absolute inset-0 flex items-center justify-center text-white font-bold text-2xl opacity-0 transition-opacity duration-300 delay-300" id="splash-text">
+            SISTEM REKOD iGFMAS
+        </div>
+    </div>
 
+    <div id="login-page" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mx-auto z-10 relative">
+            
             <div class="text-center mb-8 mt-4">
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Sistem Log Masuk</h1>
                 <p class="text-gray-500 text-sm mt-2">Sila log masuk untuk meneruskan</p>
                 <div id="config-warning" class="hidden mt-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-left text-xs">
                     <p class="font-bold">Perhatian:</p>
-                    <p>Supabase Keys belum ditetapkan dalam kod. Sila kemaskini fail 'index.html' baris 260.</p>
+                    <p>Supabase Keys belum ditetapkan dalam kod. Sila kemaskini fail 'index.html'.</p>
                 </div>
             </div>
             
-            <form id="login-form" class="space-y-4">
+            <form id="login-form" class="space-y-6">
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
                     <input type="email" id="email" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="admin@example.com">
@@ -155,7 +169,13 @@
                     <input type="password" id="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="********">
                 </div>
                 <div id="login-error" class="text-red-500 text-sm hidden bg-red-100 p-3 rounded border border-red-200 whitespace-pre-line"></div>
-                <button type="submit" id="login-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Log Masuk</button>
+                
+                <div class="flex justify-center w-full">
+                    <button type="submit" id="login-btn" class="liquid-btn relative w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center h-[50px]">
+                        <span class="z-10 relative" id="btn-text">Log Masuk</span>
+                        <span class="btn-wave"></span>
+                    </button>
+                </div>
             </form>
             
             <div class="mt-4 text-center">
@@ -163,23 +183,19 @@
             </div>
         </div>
 
-        <!-- Debug Console for User Feedback -->
         <div id="debug-console" class="w-full max-w-md mt-4">
             <div>> System Initialized. Waiting for input...</div>
         </div>
     </div>
 
-    <!-- ================= MAIN APP LAYOUT ================= -->
     <div id="app-layout" class="hidden-section min-h-screen flex flex-col w-full">
         
-        <!-- Navbar -->
         <nav class="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
             <div class="w-full px-4 sm:px-6 lg:px-8"> 
                 <div class="flex flex-col md:flex-row items-center justify-between h-auto md:h-16 py-2 md:py-0">
                     <div class="flex flex-col md:flex-row items-center w-full md:w-auto">
                         <span class="font-bold text-lg md:text-xl mb-2 md:mb-0 text-center md:text-left">Sistem Rekod HELPDESK iGFMAS</span>
                         <div class="md:ml-10 flex flex-wrap justify-center gap-2">
-                            <!-- NEW: Main Tab 'Call Log' triggers sub-tabs -->
                             <button onclick="switchMainTab('call-log')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 bg-blue-900 transition flex-grow md:flex-grow-0" id="nav-call-log">Call Log</button>
                             <button onclick="switchMainTab('loan')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition flex-grow md:flex-grow-0" id="nav-loan">Pinjaman ICT</button>
                         </div>
@@ -194,26 +210,20 @@
 
         <main class="flex-grow p-4 md:p-6 w-full mx-auto"> 
             
-            <!-- HIDDEN FILE INPUTS (Global) -->
             <input type="file" id="excel-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
             <input type="file" id="master-data-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleMasterDataUpload(event)">
             
-            <!-- HIDDEN FILE INPUTS (For Loan System) -->
             <input type="file" id="loan-user-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanUserUpload(event)">
             <input type="file" id="loan-inventory-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanInventoryUpload(event)">
             <input type="file" id="loan-records-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanRecordsUpload(event)">
 
-            <!-- ================= CALL LOG MAIN SECTION ================= -->
             <div id="call-log-section" class="w-full">
-                <!-- Sub-tabs for Call Log -->
                 <div class="flex flex-wrap border-b mb-6 overflow-x-auto">
                     <button onclick="switchCallLogTab('search')" id="btn-sub-search" class="px-4 md:px-6 py-2 text-sm md:text-base text-blue-600 border-b-2 border-blue-600 font-medium whitespace-nowrap">Carian & Input</button>
                     <button onclick="switchCallLogTab('records')" id="btn-sub-records" class="px-4 md:px-6 py-2 text-sm md:text-base text-gray-500 hover:text-blue-600 font-medium whitespace-nowrap">Pangkalan Data Rekod</button>
                 </div>
 
-                <!-- SUB-TAB 1: SEARCH & INPUT -->
                 <div id="sub-search-page" class="space-y-6 w-full">
-                    <!-- Search Section -->
                     <div class="bg-white p-4 md:p-6 rounded-lg shadow border border-gray-200">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                             <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="search"></i> Carian Live (Master Data)</h2>
@@ -227,7 +237,6 @@
 </div>
                         </div>
                         
-                        <!-- Updated Live Search Component -->
                         <div class="relative w-full">
                             <div class="flex flex-col md:flex-row gap-2">
                                 <div class="relative flex-grow w-full">
@@ -240,13 +249,11 @@
                             </div>
                             
                             <div id="search-results-dropdown" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-100 hidden max-h-60 overflow-y-auto mt-1">
-                                <!-- Results injected here -->
-                            </div>
+                                </div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2">* Carian ini disambungkan ke pangkalan data 'personnel' anda.</p>
                     </div>
 
-                    <!-- Input Form Section -->
                     <div class="bg-white p-4 md:p-6 rounded-lg shadow border border-gray-200">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-2">
                             <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="file-text"></i> Borang Maklumat</h2>
@@ -310,11 +317,8 @@
                                         <button type="button" onclick="enableEdit('department')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
-                                
-                                <!-- REMOVED STATUS SELESAI DROPDOWN -->
                             </div>
 
-                            <!-- System Selection & Issue -->
                             <div class="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                                 <label class="block text-sm font-bold text-gray-800 mb-3">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
                                 
@@ -370,7 +374,6 @@
                     </div>
                 </div>
 
-                <!-- SUB-TAB 2: RECORDS -->
                 <div id="sub-records-page" class="hidden-section space-y-6 w-full">
                     <div class="bg-white p-4 md:p-6 rounded-lg shadow border border-gray-200">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -386,7 +389,6 @@
     <button onclick="confirmClearDatabase()" class="admin-only hidden bg-red-100 text-red-700 border border-red-200 px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-red-200 flex items-center gap-2" title="Padam semua data"><i data-lucide="trash-2"></i> Kosongkan</button>
 </div>                        </div>
                         <div class="table-container border border-gray-200 rounded-lg">
-                            <!-- UPDATED TABLE DISPLAY -->
                             <table class="min-w-full bg-white text-xs md:text-sm" id="records-table">
                                 <thead class="bg-gray-100 text-gray-700 uppercase leading-normal">
                                     <tr>
@@ -398,33 +400,27 @@
                                         <th class="text-left w-32">Direkod Oleh</th>
                                         <th class="text-left w-32">Tarikh Perubahan Status</th>
                                         <th class="text-left w-32">Status Dikemaskini Oleh</th>
-                                        <th class="text-left w-24">Status Selesai</th> <!-- MOVED TO END -->
-                                    </tr>
+                                        <th class="text-left w-24">Status Selesai</th> </tr>
                                 </thead>
                                 <tbody class="text-gray-600 font-light" id="table-body">
-                                    <!-- Data injected here -->
-                                </tbody>
+                                    </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ================= PINJAMAN ICT PAGE ================= -->
             <div id="loan-page" class="hidden-section space-y-6 w-full">
                 <div class="bg-white p-4 md:p-6 rounded-lg shadow border border-gray-200">
                     <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800 mb-6"><i data-lucide="monitor-smartphone"></i> Sistem Pinjaman Peranti</h2>
                     
-                    <!-- Sub-tabs for Loan System -->
                     <div class="flex flex-wrap border-b mb-6 overflow-x-auto">
                         <button onclick="switchLoanTab('loan-tab-borrow')" id="btn-loan-borrow" class="px-4 md:px-6 py-2 text-sm md:text-base text-blue-600 border-b-2 border-blue-600 font-medium whitespace-nowrap">Pinjam</button>
                         <button onclick="switchLoanTab('loan-tab-return')" id="btn-loan-return" class="px-4 md:px-6 py-2 text-sm md:text-base text-gray-500 hover:text-blue-600 font-medium whitespace-nowrap">Pulang</button>
                         <button onclick="switchLoanTab('loan-tab-admin')" id="btn-loan-admin" class="px-4 md:px-6 py-2 text-sm md:text-base text-gray-500 hover:text-blue-600 font-medium whitespace-nowrap">Admin</button>
-                        <!-- New Tab Button -->
                         <button onclick="switchLoanTab('loan-tab-history')" id="btn-loan-history" class="px-4 md:px-6 py-2 text-sm md:text-base text-gray-500 hover:text-blue-600 font-medium whitespace-nowrap">Rekod Pinjaman</button>
                     </div>
 
-                    <!-- 1. PINJAM TAB -->
                     <div id="loan-tab-borrow" class="loan-tab-content">
                         <form id="loanForm" class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -464,7 +460,6 @@
                         </form>
                     </div>
 
-                    <!-- 2. PULANG TAB -->
                     <div id="loan-tab-return" class="loan-tab-content hidden">
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
                             <h5 class="text-lg font-bold text-gray-800 mb-2">Pulangkan Peranti</h5>
@@ -476,8 +471,7 @@
                         </div>
                     </div>
 
-                    <!-- 3. ADMIN TAB -->
-<div id="loan-tab-admin" class="loan-tab-content hidden">
+                    <div id="loan-tab-admin" class="loan-tab-content hidden">
     
     <div class="admin-only hidden mb-8 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
         <h6 class="font-bold text-yellow-800 mb-3 flex items-center gap-2"><i data-lucide="upload-cloud"></i> Bulk Import (Excel)</h6>
@@ -534,7 +528,6 @@
         
     </div>
 </div>
-                    <!-- 4. REKOD PINJAMAN (HISTORY) TAB -->
                     <div id="loan-tab-history" class="loan-tab-content hidden">
                         <div class="mb-4 flex justify-between items-center">
                             <h6 class="font-bold text-gray-700">Sejarah Pinjaman</h6>
@@ -563,8 +556,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="loan-history-body" class="bg-white">
-                                    <!-- History data injected here -->
-                                </tbody>
+                                    </tbody>
                             </table>
                         </div>
                     </div>
@@ -575,12 +567,10 @@
         </main>
     </div>
 
-    <!-- Notification Toast -->
     <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 transition duration-300 opacity-0 z-50">
         Notification message
     </div>
 
-    <!-- DOUBLE CONFIRMATION MODAL -->
     <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 px-4">
         <div class="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full text-center border-t-4 border-red-600">
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
@@ -617,17 +607,6 @@
             consoleDiv.appendChild(newLine);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
             console.log(message);
-        }
-
-        // TRIGGER ROPE ANIMATION
-        function triggerRopeTie() {
-            const gauge = document.getElementById('connection-gauge');
-            const statusText = document.getElementById('connection-status');
-            
-            gauge.classList.add('connected');
-            statusText.textContent = "Tersambung!";
-            statusText.classList.remove('text-gray-400');
-            statusText.classList.add('connected-text');
         }
 
         // HELPER: Timeout Wrapper for Network Calls
@@ -829,7 +808,6 @@
                 }
                 if (session) {
                     logDebug("Session Found: " + session.user.email);
-                    triggerRopeTie(); // Trigger animation on success
                     currentUser = session.user;
                     showApp();
                 } else {
@@ -861,39 +839,53 @@
                 return;
             }
 
-            // UI Loading State
-            loginBtn.textContent = "Sedang Memproses...";
-            loginBtn.disabled = true;
-            loginBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            logDebug("Attempting login for: " + email);
+            // 1. TRIGGER "MELT" ANIMATION (Signing In)
+            loginBtn.classList.add('melting');
+            
+            // Artificial delay to let the animation play
+            const minAnimationTime = new Promise(resolve => setTimeout(resolve, 1500));
 
             try {
-                // Use helper to timeout after 20 seconds (Cold start protection)
-                const { data, error } = await withTimeout(
-                    supabase.auth.signInWithPassword({ email, password }),
-                    20000, 
-                    "Login"
-                );
+                // Perform Login and Wait for Animation in parallel
+                const [authResponse, _] = await Promise.all([
+                    withTimeout(supabase.auth.signInWithPassword({ email, password }), 20000, "Login"),
+                    minAnimationTime
+                ]);
+                
+                const { data, error } = authResponse;
 
-                // Reset UI State
-                loginBtn.textContent = "Log Masuk";
-                loginBtn.disabled = false;
-                loginBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-
-                if (error) {
-                    throw error; // Handle in catch block
-                }
+                if (error) throw error;
 
                 logDebug("Login SUCCESS. User ID: " + data.user.id);
-                triggerRopeTie(); // Trigger animation on success
-                currentUser = data.user;
-                showApp();
+                
+                // 2. TRIGGER "CONNECTED" WAVE (Fill Screen)
+                const overlay = document.getElementById('liquid-overlay');
+                const splashText = document.getElementById('splash-text');
+                
+                overlay.classList.add('active'); // Wave rises up
+                splashText.classList.remove('opacity-0'); // Show text in blue screen
+
+                // 3. SWITCH PAGES BEHIND THE CURTAIN
+                setTimeout(() => {
+                    currentUser = data.user;
+                    
+                    // Hide login, Show App
+                    document.getElementById('login-page').classList.add('hidden-section');
+                    document.getElementById('app-layout').classList.remove('hidden-section');
+                    document.getElementById('user-display').textContent = currentUser.email;
+                    checkAdminPermissions();
+                    switchMainTab('call-log');
+
+                    // 4. SPLASH REVEAL (Fade out overlay)
+                    // We slide the overlay UP to reveal the app
+                    overlay.style.transform = "translateY(-100%)"; 
+                    overlay.style.transition = "transform 0.6s ease-in-out";
+                    
+                }, 800); // Wait for the blue wave to fill screen first
 
             } catch (error) {
-                // Reset UI State on Error
-                loginBtn.textContent = "Log Masuk";
-                loginBtn.disabled = false;
-                loginBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                // RESET BUTTON ON ERROR
+                loginBtn.classList.remove('melting');
 
                 logDebug("Login FAILED: " + error.message);
                 
@@ -947,7 +939,6 @@
 
                 if (data.session) {
                     logDebug("Registration SUCCESS (Auto-confirmed). Logging in...");
-                    triggerRopeTie(); // Trigger animation on success
                     currentUser = data.user;
                     showApp();
                     alert("Pendaftaran berjaya! Anda telah log masuk secara automatik.");
@@ -974,46 +965,38 @@
             document.getElementById('app-layout').classList.add('hidden-section');
         }
 
-function showApp() {
-    logDebug("Switching to App Layout");
-    // Delay showing app slightly so user sees the rope animation
-    setTimeout(() => {
-        document.getElementById('login-page').classList.add('hidden-section');
-        document.getElementById('app-layout').classList.remove('hidden-section');
-        document.getElementById('user-display').textContent = currentUser.email;
+        function showApp() {
+            logDebug("Switching to App Layout");
+            document.getElementById('login-page').classList.add('hidden-section');
+            document.getElementById('app-layout').classList.remove('hidden-section');
+            document.getElementById('user-display').textContent = currentUser.email;
+            
+            checkAdminPermissions(); 
+            switchMainTab('call-log'); 
+            
+            window.scrollTo(0,0);
+        }
         
-        // --- NEW LINE ADDED HERE ---
-        checkAdminPermissions(); 
-        // ---------------------------
-
-        // Initialize default view
-        switchMainTab('call-log'); 
+        // Function to show admin buttons only for specific email
+        function checkAdminPermissions() {
+            const adminEmail = 'suhardi.alias@moe.gov.my';
+            
+            // Check if current user exists and matches email
+            if (currentUser && currentUser.email === adminEmail) {
+                // Find all elements with class 'admin-only'
+                const adminElements = document.querySelectorAll('.admin-only');
+                
+                // Remove 'hidden' class to reveal them
+                adminElements.forEach(el => {
+                    el.classList.remove('hidden');
+                });
+                
+                logDebug("Admin privileges granted for: " + adminEmail);
+            } else {
+                logDebug("User is not admin. Buttons hidden.");
+            }
+        }
         
-        window.scrollTo(0,0); // Ensure window scrolls to top
-    }, 1000);
-}
-// Function to show admin buttons only for specific email
-function checkAdminPermissions() {
-    const adminEmail = 'suhardi.alias@moe.gov.my';
-    
-    // Check if current user exists and matches email
-    if (currentUser && currentUser.email === adminEmail) {
-        // Find all elements with class 'admin-only'
-        const adminElements = document.querySelectorAll('.admin-only');
-        
-        // Remove 'hidden' class to reveal them
-        adminElements.forEach(el => {
-            el.classList.remove('hidden');
-            // For buttons that were flex, we need to ensure they display correctly
-            // Tailwind's 'hidden' is just display:none. Removing it reverts to default element style
-            // or other classes present (like 'flex').
-        });
-        
-        logDebug("Admin privileges granted for: " + adminEmail);
-    } else {
-        logDebug("User is not admin. Buttons hidden.");
-    }
-}
         // --- NEW MAIN TAB LOGIC ---
         function switchMainTab(tabId) {
             // 1. Update Top Navbar Active State
@@ -1632,77 +1615,79 @@ function checkAdminPermissions() {
 
 
         // ================= LOAN SYSTEM LOGIC =================
-async function loadLoanData() {
-    // 1. Fetch Users from 'user_ba' (Sorted Alphabetically)
-    const { data: users } = await supabase
-        .from('user_ba')
-        .select('name')
-        .order('name', { ascending: true }); // Added Sort
+        async function loadLoanData() {
+            // 1. Fetch Users from 'user_ba' (Sorted Alphabetically)
+            const { data: users } = await supabase
+                .from('user_ba')
+                .select('name')
+                .order('name', { ascending: true }); // Added Sort
 
-    const uList = document.getElementById('userList');
-    uList.innerHTML = '';
-    if(users) users.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.name;
-        uList.appendChild(opt);
-    });
+            const uList = document.getElementById('userList');
+            uList.innerHTML = '';
+            if(users) users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.name;
+                uList.appendChild(opt);
+            });
 
-    // 2. Fetch Available Devices (Sorted Alphabetically by Tag)
-    const { data: devices } = await supabase
-        .from('device_inventory')
-        .select('*')
-        .eq('status', 'Tersedia')
-        .order('tag', { ascending: true }); // <--- THIS LINE SORTS THE LIST
+            // 2. Fetch Available Devices (Sorted Alphabetically by Tag)
+            const { data: devices } = await supabase
+                .from('device_inventory')
+                .select('*')
+                .eq('status', 'Tersedia')
+                .order('tag', { ascending: true }); // <--- THIS LINE SORTS THE LIST
 
-    const dSel = document.getElementById('deviceSelect');
-    dSel.innerHTML = '<option value="" disabled selected>Pilih Peranti...</option>';
-    if(devices) devices.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.tag;
-        opt.text = `${d.tag} - ${d.type} (${d.serial})`;
-        dSel.appendChild(opt);
-    });
+            const dSel = document.getElementById('deviceSelect');
+            dSel.innerHTML = '<option value="" disabled selected>Pilih Peranti...</option>';
+            if(devices) devices.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.tag;
+                opt.text = `${d.tag} - ${d.type} (${d.serial})`;
+                dSel.appendChild(opt);
+            });
 
-    // 3. Fetch Rented Devices for Return (Sorted Alphabetically)
-    const { data: rented } = await supabase
-        .from('device_inventory')
-        .select('*')
-        .eq('status', 'Dipinjam')
-        .order('tag', { ascending: true }); // Added Sort
+            // 3. Fetch Rented Devices for Return (Sorted Alphabetically)
+            const { data: rented } = await supabase
+                .from('device_inventory')
+                .select('*')
+                .eq('status', 'Dipinjam')
+                .order('tag', { ascending: true }); // Added Sort
 
-    const rSel = document.getElementById('returnSelect');
-    rSel.innerHTML = '<option value="" disabled selected>Pilih Peranti Dipinjam...</option>';
-    if(rented) rented.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.tag;
-        opt.text = `${d.tag} - ${d.type}`;
-        rSel.appendChild(opt);
-    });
+            const rSel = document.getElementById('returnSelect');
+            rSel.innerHTML = '<option value="" disabled selected>Pilih Peranti Dipinjam...</option>';
+            if(rented) rented.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.tag;
+                opt.text = `${d.tag} - ${d.type}`;
+                rSel.appendChild(opt);
+            });
 
-    // 4. Fetch Active Loans for Admin Table
-    const { data: loans } = await supabase
-        .from('rekod_pinjaman')
-        .select('*')
-        .eq('status', 'Active')
-        .order('created_at', { ascending: false }); // Show newest loans first
+            // 4. Fetch Active Loans for Admin Table
+            const { data: loans } = await supabase
+                .from('rekod_pinjaman')
+                .select('*')
+                .eq('status', 'Active')
+                .order('created_at', { ascending: false }); // Show newest loans first
 
-    const tbody = document.getElementById('active-loans-body');
-    tbody.innerHTML = '';
-    if(loans && loans.length > 0) {
-        loans.forEach(l => {
-            tbody.innerHTML += `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-2">${l.user_name}</td>
-                    <td class="p-2 font-medium text-blue-600">${l.device_tag}</td>
-                    <td class="p-2">${l.end_date}</td>
-                    <td class="p-2 text-xs text-gray-500">${l.usage_details || '-'}</td>
-                </tr>
-            `;
-        });
-    } else {
-        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Tiada pinjaman aktif.</td></tr>';
-    }
-}        async function loadLoanHistory() {
+            const tbody = document.getElementById('active-loans-body');
+            tbody.innerHTML = '';
+            if(loans && loans.length > 0) {
+                loans.forEach(l => {
+                    tbody.innerHTML += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-2">${l.user_name}</td>
+                            <td class="p-2 font-medium text-blue-600">${l.device_tag}</td>
+                            <td class="p-2">${l.end_date}</td>
+                            <td class="p-2 text-xs text-gray-500">${l.usage_details || '-'}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Tiada pinjaman aktif.</td></tr>';
+            }
+        }        
+        
+        async function loadLoanHistory() {
             const { data: loans } = await supabase.from('rekod_pinjaman').select('*').order('created_at', { ascending: false });
             currentLoanHistory = loans || []; // Store for export
             const tbody = document.getElementById('loan-history-body');
