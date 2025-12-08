@@ -983,7 +983,28 @@
                 window.scrollTo(0,0); // Ensure window scrolls to top
             }, 1000);
         }
-
+// Function to show admin buttons only for specific email
+function checkAdminPermissions() {
+    const adminEmail = 'suhardi.alias@moe.gov.my';
+    
+    // Check if current user exists and matches email
+    if (currentUser && currentUser.email === adminEmail) {
+        // Find all elements with class 'admin-only'
+        const adminElements = document.querySelectorAll('.admin-only');
+        
+        // Remove 'hidden' class to reveal them
+        adminElements.forEach(el => {
+            el.classList.remove('hidden');
+            // For buttons that were flex, we need to ensure they display correctly
+            // Tailwind's 'hidden' is just display:none. Removing it reverts to default element style
+            // or other classes present (like 'flex').
+        });
+        
+        logDebug("Admin privileges granted for: " + adminEmail);
+    } else {
+        logDebug("User is not admin. Buttons hidden.");
+    }
+}
         // --- NEW MAIN TAB LOGIC ---
         function switchMainTab(tabId) {
             // 1. Update Top Navbar Active State
