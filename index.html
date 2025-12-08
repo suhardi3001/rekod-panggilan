@@ -118,7 +118,7 @@
             </div>
 
             <div class="text-center mb-8 mt-4">
-                <h1 class="text-3xl font-bold text-gray-800">Sistem Rekod <br>Unit Teknologi Maklumat</h1>
+                <h1 class="text-3xl font-bold text-gray-800">Sistem Log Masuk</h1>
                 <p class="text-gray-500 text-sm mt-2">Sila log masuk untuk meneruskan</p>
                 <div id="config-warning" class="hidden mt-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-left text-xs">
                     <p class="font-bold">Perhatian:</p>
@@ -158,11 +158,11 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center">
-                        <span class="font-bold text-xl">Sistem Rekod UTM</span>
+                        <span class="font-bold text-xl">Sistem Rekod HELPDESK iGFMAS</span>
                         <div class="ml-10 flex items-baseline space-x-4">
-                            <button onclick="showPage('search')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 bg-blue-900 transition" id="nav-search">CARIAN & PEREKODAN<br> CALL DAN EMEL LOG</button>
-                            <button onclick="showPage('records')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition" id="nav-records">CAL LOG \ EMEL LOG</button>
-                            <button onclick="showPage('loan')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition" id="nav-loan">PINJAMAN ICT</button>
+                            <!-- NEW: Main Tab 'Call Log' triggers sub-tabs -->
+                            <button onclick="switchMainTab('call-log')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 bg-blue-900 transition" id="nav-call-log">Call Log</button>
+                            <button onclick="switchMainTab('loan')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition" id="nav-loan">Pinjaman ICT</button>
                         </div>
                     </div>
                     <div>
@@ -184,214 +184,212 @@
             <input type="file" id="loan-inventory-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanInventoryUpload(event)">
             <input type="file" id="loan-records-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanRecordsUpload(event)">
 
-            <!-- ================= SEARCH & INPUT PAGE ================= -->
-            <div id="search-page" class="space-y-6">
-                
-                <!-- Search Section -->
-                <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                        <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="search"></i> Carian Live (AO1109 ECP450)</h2>
-                        <div class="flex gap-2">
-                            <button onclick="triggerMasterUpload()" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-200 transition flex items-center gap-2 border border-blue-200">
-                                <i data-lucide="database-backup" class="w-4 h-4"></i> Import Data Induk
-                            </button>
-                            <button onclick="confirmClearMasterDatabase()" class="bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition flex items-center gap-2 border border-red-200">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i> Padam Data Induk
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Updated Live Search Component -->
-                    <div class="relative">
-                        <div class="flex gap-2">
-                            <div class="relative flex-grow">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                                    <i data-lucide="search" class="w-5 h-5"></i>
-                                </span>
-                                <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cari Nama, IC, Telefon, Emel, PTJ atau Jabatan..." autocomplete="off">
+            <!-- ================= CALL LOG MAIN SECTION ================= -->
+            <div id="call-log-section">
+                <!-- Sub-tabs for Call Log -->
+                <div class="flex border-b mb-6">
+                    <button onclick="switchCallLogTab('search')" id="btn-sub-search" class="px-6 py-2 text-blue-600 border-b-2 border-blue-600 font-medium">Carian & Input</button>
+                    <button onclick="switchCallLogTab('records')" id="btn-sub-records" class="px-6 py-2 text-gray-500 hover:text-blue-600 font-medium">Pangkalan Data Rekod</button>
+                </div>
+
+                <!-- SUB-TAB 1: SEARCH & INPUT -->
+                <div id="sub-search-page" class="space-y-6">
+                    <!-- Search Section -->
+                    <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                            <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="search"></i> Carian Live (Master Data)</h2>
+                            <div class="flex gap-2">
+                                <button onclick="triggerMasterUpload()" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-200 transition flex items-center gap-2 border border-blue-200">
+                                    <i data-lucide="database-backup" class="w-4 h-4"></i> Import Data Induk
+                                </button>
+                                <button onclick="confirmClearMasterDatabase()" class="bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition flex items-center gap-2 border border-red-200">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i> Padam Data Induk
+                                </button>
                             </div>
-                            <!-- Manual trigger triggers live search logic directly -->
-                            <button onclick="handleLiveSearch(document.getElementById('global-search').value)" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Cari</button>
                         </div>
                         
-                        <!-- Search Dropdown Results -->
-                        <div id="search-results-dropdown" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-100 hidden max-h-60 overflow-y-auto mt-1">
-                            <!-- Results injected here -->
-                        </div>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">* Carian ini disambungkan ke pangkalan data 'personnel' anda.</p>
-                </div>
-
-                <!-- Input Form Section -->
-                <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="file-text"></i> Borang Maklumat</h2>
-                        <span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full" id="current-date"></span>
-                    </div>
-
-                    <form id="data-form" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Textbox 1: IC -->
-                            <div class="relative group">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">No. Kad Pengenalan (IC)</label>
-                                <div class="relative">
-                                    <input type="text" id="ic" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
-                                    <button type="button" onclick="enableEdit('ic')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                        <!-- Updated Live Search Component -->
+                        <div class="relative">
+                            <div class="flex gap-2">
+                                <div class="relative flex-grow">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                                        <i data-lucide="search" class="w-5 h-5"></i>
+                                    </span>
+                                    <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cari Nama, IC, Telefon, Emel, PTJ atau Jabatan..." autocomplete="off">
                                 </div>
-                            </div>
-
-                            <!-- Textbox 2: NAMA -->
-                            <div class="relative">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Penuh</label>
-                                <div class="relative">
-                                    <input type="text" id="nama" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
-                                    <button type="button" onclick="enableEdit('nama')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                </div>
-                            </div>
-
-                            <!-- Textbox 3: TELEFON -->
-                            <div class="relative">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">No. Telefon</label>
-                                <div class="relative">
-                                    <input type="text" id="telefon" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
-                                    <button type="button" onclick="enableEdit('telefon')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                </div>
-                            </div>
-
-                            <!-- Textbox 4: EMEL -->
-                            <div class="relative">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Emel</label>
-                                <div class="relative">
-                                    <input type="email" id="emel" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
-                                    <button type="button" onclick="enableEdit('emel')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                </div>
-                            </div>
-
-                            <!-- Textbox 5: GRED -->
-                            <div class="relative">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Gred Jawatan</label>
-                                <div class="relative">
-                                    <input type="text" id="gred" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
-                                    <button type="button" onclick="enableEdit('gred')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                </div>
-                            </div>
-
-                            <!-- Textbox 6: KOD PTJ -->
-                            <div class="relative">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Kod PTJ</label>
-                                <div class="relative">
-                                    <input type="text" id="kod_ptj" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
-                                    <button type="button" onclick="enableEdit('kod_ptj')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                </div>
-                            </div>
-
-                            <!-- Textbox 7: DEPARTMENT -->
-                            <div class="relative md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Jabatan / Department</label>
-                                <div class="relative">
-                                    <input type="text" id="department" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
-                                    <button type="button" onclick="enableEdit('department')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                </div>
+                                <button onclick="handleLiveSearch(document.getElementById('global-search').value)" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Cari</button>
                             </div>
                             
-                            <!-- Dropdown -->
-                            <div class="md:col-span-1">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Status Selesai</label>
-                                <select id="confirmation" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="" disabled selected>Sila Pilih</option>
-                                    <option value="YA">YA</option>
-                                    <option value="TIDAK">TIDAK</option>
-                                </select>
+                            <div id="search-results-dropdown" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-100 hidden max-h-60 overflow-y-auto mt-1">
+                                <!-- Results injected here -->
                             </div>
                         </div>
-
-                        <!-- System Selection & Issue (New) -->
-                        <div class="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                            <label class="block text-sm font-bold text-gray-800 mb-3">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
-                            
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="system-radio-group">
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                    <input type="radio" name="system_type" value="ecp450" class="form-radio text-blue-600">
-                                    <span class="text-xs font-medium">ECP450 / Portal</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                    <input type="radio" name="system_type" value="ecp400" class="form-radio text-blue-600">
-                                    <span class="text-xs font-medium">ECP400</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                    <input type="radio" name="system_type" value="hcp400" class="form-radio text-blue-600">
-                                    <span class="text-xs font-medium">HCP400</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                    <input type="radio" name="system_type" value="psa400" class="form-radio text-blue-600">
-                                    <span class="text-xs font-medium">PSA400 / SOLMAN</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                    <input type="radio" name="system_type" value="bp1" class="form-radio text-blue-600">
-                                    <span class="text-xs font-medium">BP1</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                    <input type="radio" name="system_type" value="bwp" class="form-radio text-blue-600">
-                                    <span class="text-xs font-medium">BWP</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                    <input type="radio" name="system_type" value="mycost" class="form-radio text-blue-600">
-                                    <span class="text-xs font-medium">MyCost</span>
-                                </label>
-                            </div>
-
-                            <div id="issue-dropdown-container" class="hidden animate-fade-in">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Isu <span class="text-red-500">*</span></label>
-                                <select id="issue-dropdown" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="" disabled selected>Sila Pilih Isu</option>
-                                </select>
-                            </div>
-
-                            <div id="other-issue-container" class="mt-3 hidden animate-fade-in">
-                                <input type="text" id="other-issue-input" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sila nyatakan masalah lain secara spesifik...">
-                            </div>
-                        </div>
-
-                        <div class="pt-4 border-t border-gray-100 flex justify-end">
-                            <button type="submit" id="submit-btn" disabled class="bg-green-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-green-700 shadow-md transition transform hover:scale-105 flex items-center gap-2 opacity-50 cursor-not-allowed">
-                                <i data-lucide="save"></i> Hantar & Simpan
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- ================= REKOD DATABASE PAGE ================= -->
-            <div id="records-page" class="hidden-section space-y-6">
-                <!-- Records Page Content (Same as before) -->
-                <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800"><i data-lucide="database"></i> Rekod Panggilan dan Emel IGFMAS</h2>
-                        <div class="flex flex-wrap gap-2 items-center">
-                            <button onclick="triggerImport()" class="bg-gray-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 flex items-center gap-2"><i data-lucide="upload"></i> Import Rekod</button>
-                            <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center gap-2"><i data-lucide="sheet"></i> Export Excel</button>
-                            <button onclick="exportToPDF()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 flex items-center gap-2"><i data-lucide="file-down"></i> Export PDF</button>
-                            <button onclick="fetchRecords()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200"><i data-lucide="refresh-cw"></i></button>
-                            <div class="border-l border-gray-300 mx-1 h-8"></div>
-                            <button onclick="confirmClearDatabase()" class="bg-red-100 text-red-700 border border-red-200 px-3 py-2 rounded-lg text-sm hover:bg-red-200 flex items-center gap-2" title="Padam semua data"><i data-lucide="trash-2"></i> Kosongkan</button>
-                        </div>
+                        <p class="text-xs text-gray-500 mt-2">* Carian ini disambungkan ke pangkalan data 'personnel' anda.</p>
                     </div>
-                    <div class="overflow-x-auto rounded-lg border border-gray-200">
-                        <table class="min-w-full bg-white text-sm" id="records-table">
-                            <thead class="bg-gray-100 text-gray-700 uppercase leading-normal">
-                                <tr>
-                                    <th class="py-3 px-4 text-left">Tarikh/Masa</th>
-                                    <th class="py-3 px-4 text-left">IC</th>
-                                    <th class="py-3 px-4 text-left">Nama</th>
-                                    <th class="py-3 px-4 text-left">Jabatan</th>
-                                    <th class="py-3 px-4 text-left">Status Selesai</th>
-                                    <th class="py-3 px-4 text-left">Perkara / Masalah</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-gray-600 font-light" id="table-body">
-                                <!-- Data injected here -->
-                            </tbody>
-                        </table>
+
+                    <!-- Input Form Section -->
+                    <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="file-text"></i> Borang Maklumat</h2>
+                            <span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full" id="current-date"></span>
+                        </div>
+
+                        <form id="data-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="relative group">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">No. Kad Pengenalan (IC)</label>
+                                    <div class="relative">
+                                        <input type="text" id="ic" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
+                                        <button type="button" onclick="enableEdit('ic')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="relative">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Penuh</label>
+                                    <div class="relative">
+                                        <input type="text" id="nama" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
+                                        <button type="button" onclick="enableEdit('nama')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="relative">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">No. Telefon</label>
+                                    <div class="relative">
+                                        <input type="text" id="telefon" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
+                                        <button type="button" onclick="enableEdit('telefon')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="relative">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Emel</label>
+                                    <div class="relative">
+                                        <input type="email" id="emel" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
+                                        <button type="button" onclick="enableEdit('emel')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="relative">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Gred Jawatan</label>
+                                    <div class="relative">
+                                        <input type="text" id="gred" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
+                                        <button type="button" onclick="enableEdit('gred')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="relative">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Kod PTJ</label>
+                                    <div class="relative">
+                                        <input type="text" id="kod_ptj" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
+                                        <button type="button" onclick="enableEdit('kod_ptj')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="relative md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Jabatan / Department</label>
+                                    <div class="relative">
+                                        <input type="text" id="department" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" readonly>
+                                        <button type="button" onclick="enableEdit('department')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+                                
+                                <div class="md:col-span-1">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Status Selesai</label>
+                                    <select id="confirmation" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <option value="" disabled selected>Sila Pilih</option>
+                                        <option value="YA">YA</option>
+                                        <option value="TIDAK">TIDAK</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- System Selection & Issue -->
+                            <div class="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                <label class="block text-sm font-bold text-gray-800 mb-3">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
+                                
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="system-radio-group">
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
+                                        <input type="radio" name="system_type" value="ecp450" class="form-radio text-blue-600">
+                                        <span class="text-xs font-medium">ECP450 / Portal</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
+                                        <input type="radio" name="system_type" value="ecp400" class="form-radio text-blue-600">
+                                        <span class="text-xs font-medium">ECP400</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
+                                        <input type="radio" name="system_type" value="hcp400" class="form-radio text-blue-600">
+                                        <span class="text-xs font-medium">HCP400</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
+                                        <input type="radio" name="system_type" value="psa400" class="form-radio text-blue-600">
+                                        <span class="text-xs font-medium">PSA400 / SOLMAN</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
+                                        <input type="radio" name="system_type" value="bp1" class="form-radio text-blue-600">
+                                        <span class="text-xs font-medium">BP1</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
+                                        <input type="radio" name="system_type" value="bwp" class="form-radio text-blue-600">
+                                        <span class="text-xs font-medium">BWP</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
+                                        <input type="radio" name="system_type" value="mycost" class="form-radio text-blue-600">
+                                        <span class="text-xs font-medium">MyCost</span>
+                                    </label>
+                                </div>
+
+                                <div id="issue-dropdown-container" class="hidden animate-fade-in">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Isu <span class="text-red-500">*</span></label>
+                                    <select id="issue-dropdown" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <option value="" disabled selected>Sila Pilih Isu</option>
+                                    </select>
+                                </div>
+
+                                <div id="other-issue-container" class="mt-3 hidden animate-fade-in">
+                                    <input type="text" id="other-issue-input" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sila nyatakan masalah lain secara spesifik...">
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-gray-100 flex justify-end">
+                                <button type="submit" id="submit-btn" disabled class="bg-green-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-green-700 shadow-md transition transform hover:scale-105 flex items-center gap-2 opacity-50 cursor-not-allowed">
+                                    <i data-lucide="save"></i> Hantar & Simpan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 2: RECORDS -->
+                <div id="sub-records-page" class="hidden-section space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                            <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800"><i data-lucide="database"></i> Rekod Panggilan dan Emel IGFMAS</h2>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <button onclick="triggerImport()" class="bg-gray-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 flex items-center gap-2"><i data-lucide="upload"></i> Import Rekod</button>
+                                <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center gap-2"><i data-lucide="sheet"></i> Export Excel</button>
+                                <button onclick="exportToPDF()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 flex items-center gap-2"><i data-lucide="file-down"></i> Export PDF</button>
+                                <button onclick="fetchRecords()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200"><i data-lucide="refresh-cw"></i></button>
+                                <div class="border-l border-gray-300 mx-1 h-8"></div>
+                                <button onclick="confirmClearDatabase()" class="bg-red-100 text-red-700 border border-red-200 px-3 py-2 rounded-lg text-sm hover:bg-red-200 flex items-center gap-2" title="Padam semua data"><i data-lucide="trash-2"></i> Kosongkan</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full bg-white text-sm" id="records-table">
+                                <thead class="bg-gray-100 text-gray-700 uppercase leading-normal">
+                                    <tr>
+                                        <th class="py-3 px-4 text-left">Tarikh/Masa</th>
+                                        <th class="py-3 px-4 text-left">IC</th>
+                                        <th class="py-3 px-4 text-left">Nama</th>
+                                        <th class="py-3 px-4 text-left">Jabatan</th>
+                                        <th class="py-3 px-4 text-left">Status Selesai</th>
+                                        <th class="py-3 px-4 text-left">Perkara / Masalah</th>
+                                        <th class="py-3 px-4 text-left">Direkod Oleh</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-600 font-light" id="table-body">
+                                    <!-- Data injected here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -962,34 +960,71 @@
                 document.getElementById('login-page').classList.add('hidden-section');
                 document.getElementById('app-layout').classList.remove('hidden-section');
                 document.getElementById('user-display').textContent = currentUser.email;
-                showPage('search'); // Default page is SEARCH
+                
+                // Initialize default view
+                switchMainTab('call-log'); 
+                
                 window.scrollTo(0,0); // Ensure window scrolls to top
             }, 1000);
         }
 
-        function showPage(pageId) {
-            // Toggle active nav state
-            const navSearch = document.getElementById('nav-search');
-            const navRecords = document.getElementById('nav-records');
-            const navLoan = document.getElementById('nav-loan');
+        // --- NEW MAIN TAB LOGIC ---
+        function switchMainTab(tabId) {
+            // 1. Update Top Navbar Active State
+            const btnCallLog = document.getElementById('nav-call-log');
+            const btnLoan = document.getElementById('nav-loan');
             
-            // Reset classes
-            [navSearch, navRecords, navLoan].forEach(btn => btn.classList.remove('bg-blue-900'));
-            document.querySelectorAll('main > div').forEach(div => div.classList.add('hidden-section'));
+            // Remove active classes
+            btnCallLog.classList.remove('bg-blue-900');
+            btnLoan.classList.remove('bg-blue-900');
 
-            if (pageId === 'search') {
-                document.getElementById('search-page').classList.remove('hidden-section');
-                navSearch.classList.add('bg-blue-900');
-            } else if (pageId === 'records') {
-                document.getElementById('records-page').classList.remove('hidden-section');
-                navRecords.classList.add('bg-blue-900');
-                fetchRecords(); 
-            } else if (pageId === 'loan') {
+            // Hide all main sections
+            document.getElementById('call-log-section').classList.add('hidden-section');
+            document.getElementById('loan-page').classList.add('hidden-section');
+
+            if (tabId === 'call-log') {
+                btnCallLog.classList.add('bg-blue-900');
+                document.getElementById('call-log-section').classList.remove('hidden-section');
+                // Default to 'search' sub-tab when entering Call Log
+                switchCallLogTab('search');
+            } else if (tabId === 'loan') {
+                btnLoan.classList.add('bg-blue-900');
                 document.getElementById('loan-page').classList.remove('hidden-section');
-                navLoan.classList.add('bg-blue-900');
+                // Default to 'borrow' sub-tab when entering Loan
+                switchLoanTab('loan-tab-borrow');
                 loadLoanData();
             }
         }
+
+        // --- CALL LOG SUB-TAB LOGIC ---
+        function switchCallLogTab(subTabId) {
+            // Update Sub-tab Button Styles
+            const btnSearch = document.getElementById('btn-sub-search');
+            const btnRecords = document.getElementById('btn-sub-records');
+            
+            // Reset styles
+            [btnSearch, btnRecords].forEach(btn => {
+                btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                btn.classList.add('text-gray-500');
+            });
+
+            // Hide content sections
+            document.getElementById('sub-search-page').classList.add('hidden-section');
+            document.getElementById('sub-records-page').classList.add('hidden-section');
+
+            // Activate Selected
+            if (subTabId === 'search') {
+                btnSearch.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                btnSearch.classList.remove('text-gray-500');
+                document.getElementById('sub-search-page').classList.remove('hidden-section');
+            } else if (subTabId === 'records') {
+                btnRecords.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                btnRecords.classList.remove('text-gray-500');
+                document.getElementById('sub-records-page').classList.remove('hidden-section');
+                fetchRecords(); // Fetch data when tab is opened
+            }
+        }
+
 
         // ================= FORM FEATURES =================
         function enableEdit(fieldId) {
@@ -1123,7 +1158,8 @@
                 department: document.getElementById('department').value,
                 confirmation: document.getElementById('confirmation').value,
                 notes: finalNote, // Saved here
-                submitted_by: currentUser.id
+                submitted_by: currentUser.id,
+                perekod: currentUser.email // Save email as 'perekod'
             };
 
             const { error } = await supabase
@@ -1159,7 +1195,7 @@
 
         async function fetchRecords() {
             const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="loader"></div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="loader"></div></td></tr>';
 
             const { data, error } = await supabase
                 .from('rekod')
@@ -1167,19 +1203,19 @@
                 .order('created_at', { ascending: false });
 
             if (error) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 py-4">${error.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-red-500 py-4">${error.message}</td></tr>`;
             } else {
                 currentRecords = data;
                 renderTable(data);
             }
         }
 
-        function renderTable(data) {
+        async function renderTable(data) {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">Tiada rekod dijumpai.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Tiada rekod dijumpai.</td></tr>';
                 return;
             }
 
@@ -1188,6 +1224,9 @@
                 tr.className = "border-b border-gray-200 hover:bg-gray-50";
                 const date = new Date(row.created_at).toLocaleString('ms-MY');
                 
+                // Use 'perekod' column, fallback to submitted_by ID or '-'
+                const recorder = row.perekod ? row.perekod : (row.submitted_by ? row.submitted_by.substring(0, 8) + '...' : '-');
+
                 tr.innerHTML = `
                     <td class="py-3 px-4 whitespace-nowrap">${date}</td>
                     <td class="py-3 px-4">${row.ic_number || '-'}</td>
@@ -1195,6 +1234,7 @@
                     <td class="py-3 px-4">${row.department || '-'}</td>
                     <td class="py-3 px-4"><span class="px-2 py-1 rounded-full text-xs ${row.confirmation === 'YA' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${row.confirmation}</span></td>
                     <td class="py-3 px-4 text-gray-500 text-sm max-w-xs truncate">${row.notes || '-'}</td>
+                    <td class="py-3 px-4 text-xs text-gray-500">${recorder}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1204,7 +1244,6 @@
         function exportToExcel() {
             if(currentRecords.length === 0) { alert("Tiada data untuk diexport"); return; }
             
-            // Map data to simpler format (No IDs, No Submitted_By)
             const cleanData = currentRecords.map(r => ({
                 "Tarikh": new Date(r.created_at).toLocaleString('ms-MY'),
                 "IC": r.ic_number,
@@ -1215,7 +1254,8 @@
                 "Kod PTJ": r.kod_ptj,
                 "Jabatan": r.department,
                 "Status": r.confirmation,
-                "Nota": r.notes
+                "Nota": r.notes,
+                "Direkod Oleh": r.perekod || r.submitted_by
             }));
 
             const ws = XLSX.utils.json_to_sheet(cleanData);
@@ -1227,19 +1267,22 @@
         function exportToPDF() {
             if(currentRecords.length === 0) { alert("Tiada data untuk diexport"); return; }
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
             doc.text("Laporan Rekod Log", 14, 15);
             doc.autoTable({
-                head: [['Masa', 'IC', 'Nama', 'Jabatan', 'Status', 'Nota']],
+                head: [['Masa', 'IC', 'Nama', 'Jabatan', 'Status', 'Nota', 'Direkod Oleh']],
                 body: currentRecords.map(r => [
                     new Date(r.created_at).toLocaleDateString(),
                     r.ic_number,
                     r.nama,
                     r.department,
                     r.confirmation,
-                    r.notes
+                    r.notes,
+                    r.perekod || (r.submitted_by ? r.submitted_by.substring(0,8) : '-')
                 ]),
-                startY: 20
+                startY: 20,
+                styles: { fontSize: 8 },
+                columnStyles: { 5: { cellWidth: 40 } } // Limit Note column width
             });
             doc.save("Rekod_Log.pdf");
         }
