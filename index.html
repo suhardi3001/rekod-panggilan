@@ -306,7 +306,7 @@
                                         <th class="p-3 text-left w-40">Tempoh</th>
                                         <th class="p-3 text-left w-32">Pulang</th>
                                         <th class="p-3 text-left w-24">Status</th>
-                                        <!-- NEW COLUMNS -->
+                                        <!-- UPDATED COLUMNS -->
                                         <th class="p-3 text-left w-32">Pegawai Pengeluar</th>
                                         <th class="p-3 text-left w-32">Pegawai Penerima</th>
                                     </tr>
@@ -499,22 +499,19 @@
         // --- SUBMIT ---
         document.getElementById('data-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            try {
-                if(!currentUser) { alert("Sila refresh dan login."); return; }
-                const sys = document.querySelector('input[name="system_type"]:checked').value;
-                const iss = document.getElementById('issue-dropdown').value;
-                const oth = document.getElementById('other-issue-input').value;
-                const note = `${sys} - ${iss}${iss==='Lain-lain' ? ' ('+oth+')' : ''}`;
-                const row = {
-                    ic_number: document.getElementById('ic').value, nama: document.getElementById('nama').value,
-                    telefon: document.getElementById('telefon').value, emel: document.getElementById('emel').value,
-                    gred: document.getElementById('gred').value, kod_ptj: document.getElementById('kod_ptj').value,
-                    department: document.getElementById('department').value, confirmation: 'TIDAK', notes: note,
-                    submitted_by: currentUser.id, perekod: currentUser.email
-                };
-                const { error } = await supabase.from('rekod').insert([row]);
-                if(error) alert(error.message); else { showToast("Disimpan!"); document.getElementById('data-form').reset(); checkFormValidity(); }
-            } catch(e) { alert("Ralat: " + e.message); }
+            const sys = document.querySelector('input[name="system_type"]:checked').value;
+            const iss = document.getElementById('issue-dropdown').value;
+            const oth = document.getElementById('other-issue-input').value;
+            const note = `${sys} - ${iss}${iss==='Lain-lain' ? ' ('+oth+')' : ''}`;
+            const row = {
+                ic_number: document.getElementById('ic').value, nama: document.getElementById('nama').value,
+                telefon: document.getElementById('telefon').value, emel: document.getElementById('emel').value,
+                gred: document.getElementById('gred').value, kod_ptj: document.getElementById('kod_ptj').value,
+                department: document.getElementById('department').value, confirmation: 'TIDAK', notes: note,
+                submitted_by: currentUser.id, perekod: currentUser.email
+            };
+            const { error } = await supabase.from('rekod').insert([row]);
+            if(error) alert(error.message); else { showToast("Disimpan!"); document.getElementById('data-form').reset(); checkFormValidity(); }
         });
 
         async function fetchRecords() {
@@ -546,35 +543,73 @@
             if(a) a.forEach(l => at.innerHTML += `<tr class="border-b"><td class="p-2">${l.user_name}</td><td class="p-2 text-blue-600">${l.device_tag}</td><td class="p-2">${l.end_date}</td></tr>`);
         }
 
-        // UPDATED SUBMIT LOAN FUNCTION (Safety Checks)
+        // UPDATED SUBMIT LOAN FUNCTION (Auto-Fallback for Missing Columns)
         async function submitLoan() {
             try {
                 if(!currentUser) { alert("Sila login semula."); return; }
                 const u = document.getElementById('loanUserName').value, d = document.getElementById('deviceSelect').value, s = document.getElementById('loanStartDate').value, e = document.getElementById('loanEndDate').value, t = document.getElementById('usageType').value;
                 if(!u || !d || !s || !e || !t) return alert("Sila isi semua (Nama, Peranti, Tarikh, Jenis).");
                 
-                const { error } = await supabase.from('rekod_pinjaman').insert([{ 
+                const payload = { 
                     user_name: u, device_tag: d, start_date: s, end_date: e, usage_type: t, 
                     usage_details: document.getElementById('usageDetails').value, status: 'Active',
-                    pegawai_pengeluar: currentUser.email 
-                }]);
+                    p_keluar: currentUser.email 
+                };
+
+                // Try inserting with all columns
+                let { error } = await supabase.from('rekod_pinjaman').insert([payload]);
                 
-                if(!error) { await supabase.from('device_inventory').update({status:'Dipinjam'}).eq('tag',d); alert("Berjaya!"); document.getElementById('loanForm').reset(); loadLoanData(); }
-                else alert("Ralat: " + error.message + "\n(Check column 'pegawai_pengeluar')");
+                // Fallback: If column missing, try inserting without 'p_keluar'
+                if (error && error.message.includes("Could not find the 'p_keluar' column")) {
+                    console.warn("Column 'p_keluar' missing. Retrying without it.");
+                    delete payload.p_keluar;
+                    const retry = await supabase.from('rekod_pinjaman').insert([payload]);
+                    error = retry.error;
+                    if(!error) alert("Berjaya! (Nota: Nama pegawai tidak direkod kerana database belum dikemaskini)");
+                }
+
+                if(!error) { 
+                    await supabase.from('device_inventory').update({status:'Dipinjam'}).eq('tag',d); 
+                    if(payload.p_keluar) alert("Berjaya!"); 
+                    document.getElementById('loanForm').reset(); 
+                    loadLoanData(); 
+                }
+                else alert("Ralat: " + error.message);
+
             } catch(err) { alert("System Error: " + err.message); }
         }
 
-        // UPDATED SUBMIT RETURN FUNCTION (Safety Checks)
+        // UPDATED SUBMIT RETURN FUNCTION (Auto-Fallback for Missing Columns)
         async function submitReturn() {
             try {
                 if(!currentUser) { alert("Sila login semula."); return; }
                 const t = document.getElementById('returnSelect').value; if(!t) return;
                 const { data: l } = await supabase.from('rekod_pinjaman').select('id').eq('device_tag', t).eq('status','Active').single();
-                if(l) await supabase.from('rekod_pinjaman').update({
-                    status:'Returned', return_date: new Date(), pegawai_penerima: currentUser.email
-                }).eq('id',l.id);
+                
+                if(l) {
+                    const updatePayload = {
+                        status:'Returned', return_date: new Date(), p_penerima: currentUser.email
+                    };
+
+                    // Try update with all columns
+                    let { error } = await supabase.from('rekod_pinjaman').update(updatePayload).eq('id',l.id);
+
+                    // Fallback: If column missing, try updating without 'p_penerima'
+                    if (error && error.message.includes("Could not find the 'p_penerima' column")) {
+                        console.warn("Column 'p_penerima' missing. Retrying without it.");
+                        delete updatePayload.p_penerima;
+                        const retry = await supabase.from('rekod_pinjaman').update(updatePayload).eq('id',l.id);
+                        error = retry.error;
+                        if(!error) alert("Dipulangkan! (Nota: Nama pegawai tidak direkod kerana database belum dikemaskini)");
+                    }
+
+                    if (error) throw error;
+                }
+                
                 await supabase.from('device_inventory').update({status:'Tersedia'}).eq('tag',t);
-                alert("Dipulangkan!"); loadLoanData();
+                if(!l) alert("Dipulangkan!"); // If logic flowed correctly without error alert above
+                loadLoanData();
+
             } catch(err) { alert("System Error: " + err.message); }
         }
 
@@ -590,8 +625,8 @@
                     <td class="p-3">${l.start_date} - ${l.end_date}</td>
                     <td class="p-3">${l.return_date?new Date(l.return_date).toLocaleDateString():'-'}</td>
                     <td class="p-3">${l.status}</td>
-                    <td class="p-3 text-xs text-gray-600">${l.pegawai_pengeluar || '-'}</td>
-                    <td class="p-3 text-xs text-gray-600">${l.pegawai_penerima || '-'}</td>
+                    <td class="p-3 text-xs text-gray-600">${l.p_keluar || '-'}</td>
+                    <td class="p-3 text-xs text-gray-600">${l.p_penerima || '-'}</td>
                 </tr>`
             });
         }
@@ -769,8 +804,8 @@
             if(currentLoanHistory.length) {
                 const data = currentLoanHistory.map(l => ({
                     ...l,
-                    Pegawai_Pengeluar: l.pegawai_pengeluar,
-                    Pegawai_Penerima: l.pegawai_penerima
+                    Pegawai_Pengeluar: l.p_keluar,
+                    Pegawai_Penerima: l.p_penerima
                 }));
                 XLSX.writeFile(XLSX.utils.json_to_sheet(data), "Loans.xlsx"); 
             }
@@ -785,8 +820,8 @@
                         r.user_name,
                         r.device_tag,
                         r.status,
-                        r.pegawai_pengeluar || '-',
-                        r.pegawai_penerima || '-'
+                        r.p_keluar || '-',
+                        r.p_penerima || '-'
                     ])
                 }); 
                 d.save("Loans.pdf"); 
