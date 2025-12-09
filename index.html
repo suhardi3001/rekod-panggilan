@@ -3,22 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod Log & Pinjaman</title>
+    <title>Sistem Rekod Log & Pinjaman (Updated)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        /* FIX: Added !important to ensure this overrides Tailwind's display: flex */
+        /* UTILS */
         .hidden-section { display: none !important; }
         .loader {
             border: 4px solid #f3f3f3;
@@ -31,7 +27,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Debug Console Styles */
+        /* DEBUG CONSOLE */
         #debug-console {
             background-color: #1a1a1a;
             color: #00ff00;
@@ -47,7 +43,7 @@
             max-width: 100%;
         }
 
-        /* --- TABLE STYLES FOR RESPONSIVENESS --- */
+        /* TABLES */
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -66,77 +62,35 @@
             padding: 0.75rem;
         }
 
-        /* --- LIQUID ANIMATION STYLES (NEW) --- */
-        
-        /* The Transition Overlay (Hidden by default) */
+        /* LIQUID ANIMATION */
         #liquid-overlay {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 0%;
-            background: #1e40af; /* Blue-800 */
-            z-index: 9999;
-            pointer-events: none;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: #1e40af; z-index: 9999; pointer-events: none;
             transition: height 0.8s cubic-bezier(0.65, 0, 0.35, 1);
         }
-        #liquid-overlay.active {
-            height: 100%;
-        }
+        #liquid-overlay.active { height: 100%; }
 
-        /* The Button Styling */
         .liquid-btn {
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
             transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
-        
-        /* State: Melting (Loading) */
         .liquid-btn.melting {
-            width: 50px !important; /* Shrink to circle matching height */
-            border-radius: 50% !important;
-            color: transparent !important; /* Hide text */
-            background-color: #e0f2fe; /* Light Blue bg */
-            pointer-events: none;
-            padding: 0 !important;
+            width: 50px !important; border-radius: 50% !important;
+            color: transparent !important; background-color: #e0f2fe;
+            pointer-events: none; padding: 0 !important;
         }
+        .liquid-btn.melting #btn-text { display: none; }
 
-        .liquid-btn.melting #btn-text {
-            display: none;
-        }
-
-        /* The Wave inside the button */
         .btn-wave {
-            position: absolute;
-            bottom: -50%; /* Start low */
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background-color: #3b82f6;
-            border-radius: 40%;
-            opacity: 0;
-            transform: rotate(0deg);
-            transition: opacity 0.3s;
-            z-index: 0;
+            position: absolute; bottom: -50%; left: -50%; width: 200%; height: 200%;
+            background-color: #3b82f6; border-radius: 40%; opacity: 0;
+            transform: rotate(0deg); transition: opacity 0.3s; z-index: 0;
         }
-
-        /* Animate the wave when melting */
         .liquid-btn.melting .btn-wave {
-            opacity: 1;
-            animation: spin-wave 2s linear infinite, rise-wave 10s linear forwards;
-            bottom: 0; 
+            opacity: 1; animation: spin-wave 2s linear infinite, rise-wave 10s linear forwards; bottom: 0; 
         }
-
-        @keyframes spin-wave {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Simulates "loading" progress */
-        @keyframes rise-wave {
-            0% { bottom: -60%; }
-            100% { bottom: -10%; }
-        }
+        @keyframes spin-wave { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes rise-wave { 0% { bottom: -60%; } 100% { bottom: -10%; } }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -149,13 +103,12 @@
 
     <div id="login-page" class="min-h-screen flex flex-col items-center justify-center p-4">
         <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mx-auto z-10 relative">
-            
             <div class="text-center mb-8 mt-4">
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Sistem Rekod </br> Unit Teknologi Maklumat</h1>
                 <p class="text-gray-500 text-sm mt-2">Sila log masuk untuk meneruskan</p>
                 <div id="config-warning" class="hidden mt-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-left text-xs">
                     <p class="font-bold">Perhatian:</p>
-                    <p>Supabase Keys belum ditetapkan dalam kod. Sila kemaskini fail 'index.html'.</p>
+                    <p>Supabase Keys belum ditetapkan.</p>
                 </div>
             </div>
             
@@ -177,19 +130,14 @@
                     </button>
                 </div>
             </form>
-            
             <div class="mt-4 text-center">
                  <button onclick="toggleSignUp()" class="text-sm text-blue-500 hover:underline">Tiada akaun? Daftar disini</button>
             </div>
         </div>
-
-        <div id="debug-console" class="w-full max-w-md mt-4">
-            <div>> System Initialized. Waiting for input...</div>
-        </div>
+        <div id="debug-console" class="w-full max-w-md mt-4"><div>> System Initialized.</div></div>
     </div>
 
     <div id="app-layout" class="hidden-section min-h-screen flex flex-col w-full">
-        
         <nav class="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
             <div class="w-full px-4 sm:px-6 lg:px-8"> 
                 <div class="flex flex-col md:flex-row items-center justify-between h-auto md:h-16 py-2 md:py-0">
@@ -212,7 +160,6 @@
             
             <input type="file" id="excel-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
             <input type="file" id="master-data-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleMasterDataUpload(event)">
-            
             <input type="file" id="loan-user-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanUserUpload(event)">
             <input type="file" id="loan-inventory-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanInventoryUpload(event)">
             <input type="file" id="loan-records-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleLoanRecordsUpload(event)">
@@ -240,18 +187,13 @@
                         <div class="relative w-full">
                             <div class="flex flex-col md:flex-row gap-2">
                                 <div class="relative flex-grow w-full">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                                        <i data-lucide="search" class="w-5 h-5"></i>
-                                    </span>
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i data-lucide="search" class="w-5 h-5"></i></span>
                                     <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cari Nama, IC, Telefon, Emel, PTJ atau Jabatan..." autocomplete="off">
                                 </div>
                                 <button onclick="handleLiveSearch(document.getElementById('global-search').value)" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 w-full md:w-auto">Cari</button>
                             </div>
-                            
-                            <div id="search-results-dropdown" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-100 hidden max-h-60 overflow-y-auto mt-1">
-                                </div>
+                            <div id="search-results-dropdown" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-100 hidden max-h-60 overflow-y-auto mt-1"></div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">* Carian ini disambungkan ke pangkalan data 'personnel' anda.</p>
                     </div>
 
                     <div class="bg-white p-4 md:p-6 rounded-lg shadow border border-gray-200">
@@ -269,7 +211,6 @@
                                         <button type="button" onclick="enableEdit('ic')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
-
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Penuh</label>
                                     <div class="relative">
@@ -277,7 +218,6 @@
                                         <button type="button" onclick="enableEdit('nama')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
-
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">No. Telefon</label>
                                     <div class="relative">
@@ -285,7 +225,6 @@
                                         <button type="button" onclick="enableEdit('telefon')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
-
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Emel</label>
                                     <div class="relative">
@@ -293,7 +232,6 @@
                                         <button type="button" onclick="enableEdit('emel')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
-
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Gred Jawatan</label>
                                     <div class="relative">
@@ -301,7 +239,6 @@
                                         <button type="button" onclick="enableEdit('gred')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
-
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Kod PTJ</label>
                                     <div class="relative">
@@ -309,7 +246,6 @@
                                         <button type="button" onclick="enableEdit('kod_ptj')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
-
                                 <div class="relative md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Jabatan / Department</label>
                                     <div class="relative">
@@ -321,50 +257,25 @@
 
                             <div class="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                                 <label class="block text-sm font-bold text-gray-800 mb-3">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
-                                
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="system-radio-group">
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                        <input type="radio" name="system_type" value="ecp450" class="form-radio text-blue-600">
-                                        <span class="text-xs font-medium">ECP450 / Portal</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                        <input type="radio" name="system_type" value="ecp400" class="form-radio text-blue-600">
-                                        <span class="text-xs font-medium">ECP400</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                        <input type="radio" name="system_type" value="hcp400" class="form-radio text-blue-600">
-                                        <span class="text-xs font-medium">HCP400</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                        <input type="radio" name="system_type" value="psa400" class="form-radio text-blue-600">
-                                        <span class="text-xs font-medium">PSA400 / SOLMAN</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                        <input type="radio" name="system_type" value="bp1" class="form-radio text-blue-600">
-                                        <span class="text-xs font-medium">BP1</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                        <input type="radio" name="system_type" value="bwp" class="form-radio text-blue-600">
-                                        <span class="text-xs font-medium">BWP</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50">
-                                        <input type="radio" name="system_type" value="mycost" class="form-radio text-blue-600">
-                                        <span class="text-xs font-medium">MyCost</span>
-                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="ecp450" class="form-radio text-blue-600"><span class="text-xs font-medium">ECP450 / Portal</span></label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="ecp400" class="form-radio text-blue-600"><span class="text-xs font-medium">ECP400</span></label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="hcp400" class="form-radio text-blue-600"><span class="text-xs font-medium">HCP400</span></label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="psa400" class="form-radio text-blue-600"><span class="text-xs font-medium">PSA400 / SOLMAN</span></label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="bp1" class="form-radio text-blue-600"><span class="text-xs font-medium">BP1</span></label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="bwp" class="form-radio text-blue-600"><span class="text-xs font-medium">BWP</span></label>
+                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="mycost" class="form-radio text-blue-600"><span class="text-xs font-medium">MyCost</span></label>
                                 </div>
-
                                 <div id="issue-dropdown-container" class="hidden animate-fade-in">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Isu <span class="text-red-500">*</span></label>
                                     <select id="issue-dropdown" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
                                         <option value="" disabled selected>Sila Pilih Isu</option>
                                     </select>
                                 </div>
-
                                 <div id="other-issue-container" class="mt-3 hidden animate-fade-in">
                                     <input type="text" id="other-issue-input" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sila nyatakan masalah lain secara spesifik...">
                                 </div>
                             </div>
-
                             <div class="pt-4 border-t border-gray-100 flex justify-end">
                                 <button type="submit" id="submit-btn" disabled class="w-full md:w-auto bg-green-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-green-700 shadow-md transition transform hover:scale-105 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
                                     <i data-lucide="save"></i> Hantar & Simpan
@@ -380,12 +291,10 @@
                             <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800 text-center md:text-left"><i data-lucide="database"></i> Rekod Panggilan dan Emel IGFMAS</h2>
                             <div class="flex flex-wrap gap-2 items-center justify-center">
                                 <button onclick="triggerImport()" class="admin-only hidden bg-gray-700 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-gray-800 flex items-center gap-2"><i data-lucide="upload"></i> Import</button>
-                                
                                 <button onclick="exportToExcel()" class="bg-green-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-green-700 flex items-center gap-2"><i data-lucide="sheet"></i> Excel</button>
                                 <button onclick="exportToPDF()" class="bg-red-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-red-700 flex items-center gap-2"><i data-lucide="file-down"></i> PDF</button>
                                 <button onclick="fetchRecords()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200"><i data-lucide="refresh-cw"></i></button>
                                 <div class="hidden md:block border-l border-gray-300 mx-1 h-8"></div>
-                                
                                 <button onclick="confirmClearDatabase()" class="admin-only hidden bg-red-100 text-red-700 border border-red-200 px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-red-200 flex items-center gap-2" title="Padam semua data"><i data-lucide="trash-2"></i> Kosongkan</button>
                             </div>
                         </div>
@@ -399,12 +308,12 @@
                                         <th class="text-left w-32">Jabatan</th>
                                         <th class="text-left">Perkara / Masalah</th>
                                         <th class="text-left w-32">Direkod Oleh</th>
-                                        <th class="text-left w-32">Tarikh Perubahan Status</th>
-                                        <th class="text-left w-32">Status Dikemaskini Oleh</th>
-                                        <th class="text-left w-24">Status Selesai</th> </tr>
+                                        <th class="text-left w-32">Status Update</th>
+                                        <th class="text-left w-32">Oleh</th>
+                                        <th class="text-left w-24">Selesai</th>
+                                    </tr>
                                 </thead>
-                                <tbody class="text-gray-600 font-light" id="table-body">
-                                    </tbody>
+                                <tbody class="text-gray-600 font-light" id="table-body"></tbody>
                             </table>
                         </div>
                     </div>
@@ -473,8 +382,7 @@
                     </div>
 
                     <div id="loan-tab-admin" class="loan-tab-content hidden">
-    
-                        <div class="admin-only hidden mb-8 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                        <div class="mb-8 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
                             <h6 class="font-bold text-yellow-800 mb-3 flex items-center gap-2"><i data-lucide="upload-cloud"></i> Bulk Import & Data Management</h6>
                             <div class="flex flex-wrap gap-3">
                                 <div class="flex items-center gap-1 border-r border-yellow-300 pr-3 mr-2">
@@ -485,7 +393,9 @@
                                         <i data-lucide="trash-2"></i> Clear
                                     </button>
                                 </div>
-                        
+                                <button onclick="checkOverdueLoans()" class="bg-orange-600 text-white px-4 py-2 rounded text-sm hover:bg-orange-700 flex items-center gap-2 flex-grow md:flex-grow-0 justify-center shadow-sm">
+                                    <i data-lucide="bell-ring"></i> Semak Lewat & Hantar Emel
+                                </button>
                                 <button onclick="triggerLoanUpload('inventory')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2 flex-grow md:flex-grow-0 justify-center">
                                     <i data-lucide="monitor"></i> Upload Inventory
                                 </button>
@@ -496,14 +406,12 @@
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                            
                             <div class="space-y-6">
                                 <div class="border p-4 rounded-lg bg-gray-50 shadow-sm">
                                     <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Tambah Pengguna Baru</h6>
                                     <input id="newUserName" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Nama Penuh">
                                     <button onclick="addUser()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800 transition">Tambah Pengguna</button>
                                 </div>
-
                                 <div class="border p-4 rounded-lg bg-gray-50 shadow-sm">
                                     <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Tambah Peranti Baru</h6>
                                     <input id="newTag" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Tag Aset (Cth: NB-01)">
@@ -514,7 +422,6 @@
                                     <button onclick="addDevice()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800 transition">Tambah Peranti</button>
                                 </div>
                             </div>
-
                             <div class="border p-4 rounded-lg bg-white shadow-sm h-full">
                                 <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Senarai Pinjaman Aktif</h6>
                                 <div class="table-container">
@@ -527,27 +434,20 @@
                                                 <th class="p-2 text-left">Tujuan</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="active-loans-body">
-                                            </tbody>
+                                        <tbody id="active-loans-body"></tbody>
                                     </table>
                                 </div>
                             </div>
-                            
                         </div>
                     </div>
+
                     <div id="loan-tab-history" class="loan-tab-content hidden">
                         <div class="mb-4 flex justify-between items-center">
                             <h6 class="font-bold text-gray-700">Sejarah Pinjaman</h6>
                             <div class="flex gap-2">
-                                <button onclick="exportLoanHistoryToExcel()" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700 flex items-center gap-1">
-                                    <i data-lucide="sheet" class="w-3 h-3"></i> Excel
-                                </button>
-                                <button onclick="exportLoanHistoryToPDF()" class="bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 flex items-center gap-1">
-                                    <i data-lucide="file-down" class="w-3 h-3"></i> PDF
-                                </button>
-                                <button onclick="loadLoanHistory()" class="bg-gray-200 px-3 py-1.5 rounded hover:bg-gray-300 text-xs flex items-center gap-1">
-                                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
-                                </button>
+                                <button onclick="exportLoanHistoryToExcel()" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700 flex items-center gap-1"><i data-lucide="sheet" class="w-3 h-3"></i> Excel</button>
+                                <button onclick="exportLoanHistoryToPDF()" class="bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 flex items-center gap-1"><i data-lucide="file-down" class="w-3 h-3"></i> PDF</button>
+                                <button onclick="loadLoanHistory()" class="bg-gray-200 px-3 py-1.5 rounded hover:bg-gray-300 text-xs flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
                             </div>
                         </div>
                         <div class="table-container border border-gray-200 rounded-lg">
@@ -557,55 +457,61 @@
                                         <th class="p-3 text-left w-32">Tarikh Mohon</th>
                                         <th class="p-3 text-left w-40">Peminjam</th>
                                         <th class="p-3 text-left w-32">Peranti</th>
-                                        <th class="p-3 text-left w-40">Tempoh (Mula - Tamat)</th>
-                                        <th class="p-3 text-left w-32">Tarikh Pulang (Sebenar)</th>
+                                        <th class="p-3 text-left w-40">Tempoh</th>
+                                        <th class="p-3 text-left w-32">Tarikh Pulang</th>
                                         <th class="p-3 text-left w-24">Status</th>
                                     </tr>
                                 </thead>
-                                <tbody id="loan-history-body" class="bg-white">
-                                    </tbody>
+                                <tbody id="loan-history-body" class="bg-white"></tbody>
                             </table>
                         </div>
                     </div>
-
                 </div>
             </div>
-
         </main>
     </div>
 
-    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 transition duration-300 opacity-0 z-50">
-        Notification message
-    </div>
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 transition duration-300 opacity-0 z-50">Notification message</div>
 
     <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 px-4">
         <div class="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full text-center border-t-4 border-red-600">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <i data-lucide="alert-triangle" class="text-red-600 w-6 h-6"></i>
-            </div>
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4"><i data-lucide="alert-triangle" class="text-red-600 w-6 h-6"></i></div>
             <h3 class="text-lg leading-6 font-bold text-gray-900 mb-2" id="modal-title">Amaran Keras</h3>
-            <p class="text-sm text-gray-500 mb-6" id="modal-message">
-                Adakah anda pasti mahu memadam <strong>SEMUA</strong> rekod? <br>
-                Tindakan ini tidak boleh dikembalikan.
-            </p>
+            <p class="text-sm text-gray-500 mb-6" id="modal-message">Adakah anda pasti mahu memadam <strong>SEMUA</strong> rekod? <br>Tindakan ini tidak boleh dikembalikan.</p>
             <div class="flex justify-center gap-4">
-                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                    Batal
-                </button>
-                <button id="modal-confirm-btn" onclick="executeClearDatabase()" class="px-4 py-2 bg-red-600 text-white font-bold rounded hover:bg-red-700 shadow-lg">
-                    YA, PADAM SEMUA
-                </button>
+                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Batal</button>
+                <button id="modal-confirm-btn" onclick="executeClearDatabase()" class="px-4 py-2 bg-red-600 text-white font-bold rounded hover:bg-red-700 shadow-lg">YA, PADAM SEMUA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="overdue-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 px-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center bg-orange-50 rounded-t-lg">
+                <h3 class="text-lg font-bold text-orange-800 flex items-center gap-2"><i data-lucide="alert-circle"></i> Senarai Lewat Pulang</h3>
+                <button onclick="document.getElementById('overdue-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-700"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-grow">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-100 text-gray-700">
+                        <tr><th class="p-2">Nama</th><th class="p-2">Emel (Auto)</th><th class="p-2">Peranti</th><th class="p-2">Tamat</th><th class="p-2 text-center">Tindakan</th></tr>
+                    </thead>
+                    <tbody id="overdue-list-body"></tbody>
+                </table>
+                <div id="no-overdue-msg" class="hidden text-center py-8 text-gray-500">Tiada pinjaman yang lewat tarikh. Tahniah!</div>
+            </div>
+            <div class="p-4 border-t bg-gray-50 text-right">
+                <button onclick="document.getElementById('overdue-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Tutup</button>
             </div>
         </div>
     </div>
 
     <script>
         // ================= CONFIGURATION =================
-        // IMPORTANT: Replace these two lines with your actual keys from Supabase Dashboard
         const supabaseUrl = 'https://objxfgosatmasjjifkkg.supabase.co'; 
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw';
 
-        // DEBUG LOGGER
+        // UTILS & SETUP
         function logDebug(message) {
             const consoleDiv = document.getElementById('debug-console');
             const time = new Date().toLocaleTimeString();
@@ -616,574 +522,233 @@
             console.log(message);
         }
 
-        // HELPER: Timeout Wrapper for Network Calls
         async function withTimeout(promise, timeoutMs = 15000, operationName = "Operation") {
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(`${operationName} Timed Out (${timeoutMs/1000}s). Network might be slow or blocked.`)), timeoutMs)
+                setTimeout(() => reject(new Error(`${operationName} Timed Out. Check connection.`)), timeoutMs)
             );
             return Promise.race([promise, timeoutPromise]);
         }
 
-        // Initial check for configuration
-        document.addEventListener('DOMContentLoaded', () => {
-            logDebug("Checking Configuration...");
-            if (supabaseUrl === 'YOUR_SUPABASE_PROJECT_URL' || supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY') {
-                const warningDiv = document.getElementById('config-warning');
-                warningDiv.classList.remove('hidden');
-                logDebug("ERROR: Keys not set! Please edit index.html");
-                alert("RALAT CONFIG: Sila buka kod dan masukkan 'supabaseUrl' dan 'supabaseAnonKey' anda.");
-            } else {
-                // Verify URL format
-                if (!supabaseUrl.startsWith("https://")) {
-                     logDebug("CRITICAL ERROR: supabaseUrl must start with 'https://'");
-                     alert("ERROR: supabaseUrl anda salah. Mesti bermula dengan 'https://'");
-                } else if (supabaseUrl.includes(" ")) {
-                     logDebug("CRITICAL ERROR: supabaseUrl contains spaces");
-                     alert("ERROR: supabaseUrl anda mengandungi 'space'. Sila padam.");
-                } else {
-                     logDebug("Keys detected. URL format seems OK.");
-                }
-            }
-        });
-
-        // Initialize Supabase Client
+        // Initialize Supabase
         const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-        
-        // ================= STATE MANAGEMENT =================
         let currentUser = null;
         let searchTimeout = null;
-        let currentLoanHistory = []; // Store history for export
+        let currentLoanHistory = [];
+        let clearActionType = ''; // 'rekod', 'personnel', 'user_ba'
 
-        // ================= ISSUES DATA STRUCTURE =================
+        // Issue Categories
         const issueOptions = {
-            "ecp450": [
-                "Sah grey out", "Ralat HKP", "Ralat No telefon", "Ralat Gred", "Tiada dokumen di STH", 
-                "Tiada menu dipaparkan / masalah cache", "Salah URL", "Tiada host file", "ID VPN tak boleh masuk", 
-                "Push dokumen ke pengesah", "ID telah wujud", "ID lock", "ID tanda seru kuning", "ID tanda seru merah", 
-                "Emel salah", "Role tiada", "Pengesah tiada", "Panduan capaian", "Masa tidak 12.12.9999", 
-                "Status z-deleted", "Status z-temp", "License tiada", "Role masih ada selepas hapus peranan", "Lain-lain"
-            ],
-            "ecp400": [
-                "Masalah role", "Push dokumen", "Masalah FA code", "Masalah BA Code", "ID lock", "Parameter tiada/salah", "Lain-lain"
-            ],
-            "hcp400": [
-                "Masalah role", "Masalah FA code", "Masalah BA Code", "ID lock", "Parameter tiada/salah", "Tiada peranan dalam sistem Gaji", "Lain-lain"
-            ],
-            "psa400": [
-                "Masalah role", "Masalah FA code", "Masalah BA Code", "ID lock", "Parameter tiada/salah", "Masalah Bussiness partner", "Tiada peranan dalam SOLMAN", "Lain-lain"
-            ],
-            "bp1": [
-                "Masalah role", "Masalah FA code", "Masalah BA Code", "ID lock", "Lain-lain"
-            ],
-            "bwp": [
-                "Masalah role", "Masalah FA code", "Masalah BA Code", "ID lock", "Lain-lain"
-            ],
-            "mycost": [
-                "Masalah role mycost", "ID lock", "Lain-lain"
-            ]
+            "ecp450": ["Sah grey out", "Ralat HKP", "Ralat No telefon", "Ralat Gred", "Tiada dokumen di STH", "Tiada menu dipaparkan / masalah cache", "Salah URL", "Tiada host file", "ID VPN tak boleh masuk", "Push dokumen ke pengesah", "ID telah wujud", "ID lock", "ID tanda seru kuning", "ID tanda seru merah", "Emel salah", "Role tiada", "Pengesah tiada", "Panduan capaian", "Masa tidak 12.12.9999", "Status z-deleted", "Status z-temp", "License tiada", "Role masih ada selepas hapus peranan", "Lain-lain"],
+            "ecp400": ["Masalah role", "Push dokumen", "Masalah FA code", "Masalah BA Code", "ID lock", "Parameter tiada/salah", "Lain-lain"],
+            "hcp400": ["Masalah role", "Masalah FA code", "Masalah BA Code", "ID lock", "Parameter tiada/salah", "Tiada peranan dalam sistem Gaji", "Lain-lain"],
+            "psa400": ["Masalah role", "Masalah FA code", "Masalah BA Code", "ID lock", "Parameter tiada/salah", "Masalah Bussiness partner", "Tiada peranan dalam SOLMAN", "Lain-lain"],
+            "bp1": ["Masalah role", "Masalah FA code", "Masalah BA Code", "ID lock", "Lain-lain"],
+            "bwp": ["Masalah role", "Masalah FA code", "Masalah BA Code", "ID lock", "Lain-lain"],
+            "mycost": ["Masalah role mycost", "ID lock", "Lain-lain"]
         };
 
-        // ================= INITIALIZATION =================
+        // ON LOAD
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             updateDateDisplay();
             checkAuth();
             
-            // Live Search Listener
-            document.getElementById('global-search').addEventListener('input', (e) => {
-                handleLiveSearch(e.target.value);
-            });
-            
-            // Hide dropdown when clicking outside
+            document.getElementById('global-search').addEventListener('input', (e) => handleLiveSearch(e.target.value));
             document.addEventListener('click', (e) => {
-                const dropdown = document.getElementById('search-results-dropdown');
                 if (!e.target.closest('#global-search') && !e.target.closest('#search-results-dropdown')) {
-                    dropdown.classList.add('hidden');
+                    document.getElementById('search-results-dropdown').classList.add('hidden');
                 }
             });
 
-            // Radio Button Logic
             document.querySelectorAll('input[name="system_type"]').forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    updateDropdown(e.target.value);
-                    checkFormValidity();
-                });
+                radio.addEventListener('change', (e) => { updateDropdown(e.target.value); checkFormValidity(); });
             });
 
-            // Dropdown Logic for "Lain-lain"
             document.getElementById('issue-dropdown').addEventListener('change', (e) => {
-                const otherContainer = document.getElementById('other-issue-container');
-                if (e.target.value === "Lain-lain") {
-                    otherContainer.classList.remove('hidden');
-                    document.getElementById('other-issue-input').focus();
-                } else {
-                    otherContainer.classList.add('hidden');
-                    document.getElementById('other-issue-input').value = ""; // Clear input
-                }
+                const other = document.getElementById('other-issue-container');
+                const input = document.getElementById('other-issue-input');
+                if (e.target.value === "Lain-lain") { other.classList.remove('hidden'); input.focus(); }
+                else { other.classList.add('hidden'); input.value = ""; }
                 checkFormValidity();
             });
 
-            // Add checkFormValidity to all inputs
-            const allInputs = document.querySelectorAll('input, select, textarea');
-            allInputs.forEach(input => {
+            document.querySelectorAll('input, select, textarea').forEach(input => {
                 input.addEventListener('input', checkFormValidity);
                 input.addEventListener('change', checkFormValidity);
             });
-            
-            // Initial Check
             checkFormValidity();
         });
 
-        function updateDropdown(systemType) {
-            const dropdown = document.getElementById('issue-dropdown');
-            const dropdownContainer = document.getElementById('issue-dropdown-container');
-            const otherContainer = document.getElementById('other-issue-container');
-            
-            // Reset Dropdown
-            dropdown.innerHTML = '<option value="" disabled selected>Sila Pilih Isu</option>';
-            otherContainer.classList.add('hidden');
-            document.getElementById('other-issue-input').value = "";
-
-            if (issueOptions[systemType]) {
-                issueOptions[systemType].forEach(issue => {
-                    const option = document.createElement('option');
-                    option.value = issue;
-                    option.textContent = issue;
-                    dropdown.appendChild(option);
-                });
-                dropdownContainer.classList.remove('hidden');
-            } else {
-                dropdownContainer.classList.add('hidden');
-            }
+        function updateDropdown(type) {
+            const dd = document.getElementById('issue-dropdown');
+            const ddc = document.getElementById('issue-dropdown-container');
+            dd.innerHTML = '<option value="" disabled selected>Sila Pilih Isu</option>';
+            document.getElementById('other-issue-container').classList.add('hidden');
+            if(issueOptions[type]) {
+                issueOptions[type].forEach(i => { const o = document.createElement('option'); o.value=i; o.textContent=i; dd.appendChild(o); });
+                ddc.classList.remove('hidden');
+            } else { ddc.classList.add('hidden'); }
         }
 
-        function updateDateDisplay() {
-            const now = new Date();
-            document.getElementById('current-date').textContent = now.toLocaleString('ms-MY');
-        }
+        function updateDateDisplay() { document.getElementById('current-date').textContent = new Date().toLocaleString('ms-MY'); }
 
         function checkFormValidity() {
-            // REMOVED 'confirmation' from required fields as it is removed from the form
-            const requiredIds = ['ic', 'nama', 'telefon', 'emel', 'gred', 'kod_ptj', 'department'];
-            let isValid = true;
-
-            // Check standard text fields
-            requiredIds.forEach(id => {
-                const element = document.getElementById(id);
-                if (!element || !element.value.trim()) {
-                    isValid = false;
-                }
-            });
-
-            // Check Radio Buttons (System Type)
-            const systemSelected = document.querySelector('input[name="system_type"]:checked');
-            if (!systemSelected) isValid = false;
-
-            // Check Issue Dropdown
-            const issueDropdown = document.getElementById('issue-dropdown');
-            if (!issueDropdown.value) isValid = false;
-
-            // Check "Other" Input if "Lain-lain" is selected
-            if (issueDropdown.value === "Lain-lain") {
-                const otherInput = document.getElementById('other-issue-input');
-                if (!otherInput.value.trim()) isValid = false;
-            }
-
-            const submitBtn = document.getElementById('submit-btn');
-            if (isValid) {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
+            const req = ['ic', 'nama', 'telefon', 'emel', 'gred', 'kod_ptj', 'department'];
+            let valid = req.every(id => document.getElementById(id).value.trim());
+            if(!document.querySelector('input[name="system_type"]:checked')) valid = false;
+            const issue = document.getElementById('issue-dropdown').value;
+            if(!issue) valid = false;
+            if(issue === "Lain-lain" && !document.getElementById('other-issue-input').value.trim()) valid = false;
+            
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = !valid;
+            if(valid) btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            else btn.classList.add('opacity-50', 'cursor-not-allowed');
         }
 
-        // ================= AUTHENTICATION LOGIC =================
+        // ================= AUTH =================
         async function checkAuth() {
-            logDebug("Checking Authentication Session...");
             try {
-                const { data: { session }, error } = await withTimeout(
-                    supabase.auth.getSession(),
-                    5000,
-                    "Session Check"
-                );
-
-                if (error) {
-                    logDebug("Session Error: " + error.message);
-                    return;
-                }
-                if (session) {
-                    logDebug("Session Found: " + session.user.email);
-                    currentUser = session.user;
-                    showApp();
-                } else {
-                    logDebug("No Active Session. Showing Login.");
-                    showLogin();
-                }
-            } catch (err) {
-                logDebug("CRITICAL ERROR: " + err.message);
-                if (err.message.includes("Timed Out")) {
-                     logDebug("HINT: Semak URL Supabase anda. Pastikan tiada 'space' atau typo. Atau firewall sekolah/pejabat blok connection.");
-                }
-            }
+                const { data: { session }, error } = await withTimeout(supabase.auth.getSession(), 5000, "Auth Check");
+                if (session) { currentUser = session.user; showApp(); }
+                else showLogin();
+            } catch (err) { logDebug("Auth Error: " + err.message); }
         }
 
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('login-error');
-            const loginBtn = document.getElementById('login-btn');
+            const btn = document.getElementById('login-btn');
+            btn.classList.add('melting');
             
-            errorDiv.classList.add('hidden');
-            errorDiv.textContent = "";
-
-            if (supabaseUrl.includes('YOUR_SUPABASE')) {
-                logDebug("Login blocked: Default keys in use.");
-                errorDiv.textContent = "Ralat: Supabase Keys belum dikemaskini dalam kod.";
-                errorDiv.classList.remove('hidden');
-                return;
-            }
-
-            // 1. TRIGGER "MELT" ANIMATION (Signing In)
-            loginBtn.classList.add('melting');
-            
-            // Artificial delay to let the animation play
-            const minAnimationTime = new Promise(resolve => setTimeout(resolve, 1500));
-
             try {
-                // Perform Login and Wait for Animation in parallel
-                const [authResponse, _] = await Promise.all([
-                    withTimeout(supabase.auth.signInWithPassword({ email, password }), 20000, "Login"),
-                    minAnimationTime
+                const [auth] = await Promise.all([
+                    supabase.auth.signInWithPassword({ email, password }),
+                    new Promise(r => setTimeout(r, 1500))
                 ]);
+                if (auth.error) throw auth.error;
                 
-                const { data, error } = authResponse;
-
-                if (error) throw error;
-
-                logDebug("Login SUCCESS. User ID: " + data.user.id);
-                
-                // 2. TRIGGER "CONNECTED" WAVE (Fill Screen)
                 const overlay = document.getElementById('liquid-overlay');
-                const splashText = document.getElementById('splash-text');
-                
-                overlay.classList.add('active'); // Wave rises up
-                splashText.classList.remove('opacity-0'); // Show text in blue screen
+                overlay.classList.add('active');
+                document.getElementById('splash-text').classList.remove('opacity-0');
 
-                // 3. SWITCH PAGES BEHIND THE CURTAIN
                 setTimeout(() => {
-                    currentUser = data.user;
-                    
-                    // Hide login, Show App
-                    document.getElementById('login-page').classList.add('hidden-section');
-                    document.getElementById('app-layout').classList.remove('hidden-section');
-                    document.getElementById('user-display').textContent = currentUser.email;
-                    checkAdminPermissions();
-                    switchMainTab('call-log');
-
-                    // 4. SPLASH REVEAL (Fade out overlay)
-                    // We slide the overlay UP to reveal the app
+                    currentUser = auth.data.user;
+                    showApp();
                     overlay.style.transform = "translateY(-100%)"; 
-                    overlay.style.transition = "transform 0.6s ease-in-out";
-                    
-                }, 800); // Wait for the blue wave to fill screen first
-
-            } catch (error) {
-                // RESET BUTTON ON ERROR
-                loginBtn.classList.remove('melting');
-
-                logDebug("Login FAILED: " + error.message);
-                
-                let errorMessage = "Log Masuk Gagal: " + error.message;
-
-                if (error.message.includes("Email not confirmed")) {
-                    errorMessage += "\n\nPENTING: Email anda belum disahkan. Sila semak inbox email anda.";
-                } else if (error.message.includes("Invalid login credentials")) {
-                    errorMessage += "\n\nSalah email atau password.";
-                } else if (error.message.includes("Timed Out")) {
-                    errorMessage += "\n\nSERVER TIMEOUT: Pangkalan data sedang 'bangun' (waking up) atau internet anda perlahan. Sila cuba lagi dalam 30 saat.";
-                }
-
-                errorDiv.innerText = errorMessage;
-                errorDiv.classList.remove('hidden');
+                }, 800);
+            } catch (err) {
+                btn.classList.remove('melting');
+                const errDiv = document.getElementById('login-error');
+                errDiv.innerText = "Login Failed: " + err.message;
+                errDiv.classList.remove('hidden');
             }
         }
 
-        async function handleLogout() {
-            logDebug("Logging out...");
-            await supabase.auth.signOut();
-            window.location.reload();
-        }
-
+        async function handleLogout() { await supabase.auth.signOut(); window.location.reload(); }
+        
         async function toggleSignUp() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            
-            logDebug("Attempting Registration...");
-
-            if (supabaseUrl.includes('YOUR_SUPABASE')) {
-                alert("Ralat: Sila kemaskini Supabase Keys dalam kod dahulu.");
-                return;
-            }
-
-            if(!email || !password) {
-                alert("Sila masukkan email dan password di dalam kotak untuk mendaftar.");
-                return;
-            }
-
-            try {
-                const { data, error } = await withTimeout(
-                    supabase.auth.signUp({ email, password }),
-                    25000, 
-                    "Registration"
-                );
-                
-                if(error) {
-                    throw error;
-                }
-
-                if (data.session) {
-                    logDebug("Registration SUCCESS (Auto-confirmed). Logging in...");
-                    currentUser = data.user;
-                    showApp();
-                    alert("Pendaftaran berjaya! Anda telah log masuk secara automatik.");
-                } else {
-                    logDebug("Registration SUCCESS (Email confirmation required).");
-                    alert("Pendaftaran berjaya! Sila semak email anda untuk pengesahan akaun.");
-                }
-
-            } catch (error) {
-                logDebug("Registration FAILED: " + error.message);
-                if (error.message.includes("Timed Out")) {
-                    alert("TIMEOUT: Pangkalan data sedang 'tidur' (sleeping). Ia sedang dihidupkan sekarang. Sila tunggu 30 saat dan cuba tekan butang Daftar sekali lagi.");
-                } else {
-                    alert("Gagal Mendaftar: " + error.message);
-                }
-            }
+            if(!email || !password) { alert("Sila masukkan email & password."); return; }
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if(error) alert(error.message);
+            else alert("Pendaftaran berjaya! Sila login.");
         }
 
-        document.getElementById('login-form').addEventListener('submit', handleLogin);
-
-        // ================= UI NAVIGATION =================
         function showLogin() {
             document.getElementById('login-page').classList.remove('hidden-section');
             document.getElementById('app-layout').classList.add('hidden-section');
         }
 
         function showApp() {
-            logDebug("Switching to App Layout");
             document.getElementById('login-page').classList.add('hidden-section');
             document.getElementById('app-layout').classList.remove('hidden-section');
             document.getElementById('user-display').textContent = currentUser.email;
-            
-            checkAdminPermissions(); 
-            switchMainTab('call-log'); 
-            
-            window.scrollTo(0,0);
+            checkAdminPermissions();
+            switchMainTab('call-log');
         }
-        
-        // Function to show admin buttons only for specific email
+
         function checkAdminPermissions() {
-            const adminEmail = 'suhardi.alias@moe.gov.my';
-            
-            // Check if current user exists and matches email
-            if (currentUser && currentUser.email === adminEmail) {
-                // Find all elements with class 'admin-only'
-                const adminElements = document.querySelectorAll('.admin-only');
-                
-                // Remove 'hidden' class to reveal them
-                adminElements.forEach(el => {
-                    el.classList.remove('hidden');
-                });
-                
-                logDebug("Admin privileges granted for: " + adminEmail);
-            } else {
-                logDebug("User is not admin. Buttons hidden.");
+            if (currentUser && currentUser.email === 'suhardi.alias@moe.gov.my') {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
             }
         }
-        
-        // --- NEW MAIN TAB LOGIC ---
+
+        // ================= NAVIGATION =================
         function switchMainTab(tabId) {
-            // 1. Update Top Navbar Active State
-            const btnCallLog = document.getElementById('nav-call-log');
-            const btnLoan = document.getElementById('nav-loan');
+            document.getElementById('nav-call-log').classList.toggle('bg-blue-900', tabId === 'call-log');
+            document.getElementById('nav-loan').classList.toggle('bg-blue-900', tabId === 'loan');
+            document.getElementById('call-log-section').classList.toggle('hidden-section', tabId !== 'call-log');
+            document.getElementById('loan-page').classList.toggle('hidden-section', tabId !== 'loan');
             
-            // Remove active classes
-            btnCallLog.classList.remove('bg-blue-900');
-            btnLoan.classList.remove('bg-blue-900');
-
-            // Hide all main sections
-            document.getElementById('call-log-section').classList.add('hidden-section');
-            document.getElementById('loan-page').classList.add('hidden-section');
-
-            if (tabId === 'call-log') {
-                btnCallLog.classList.add('bg-blue-900');
-                document.getElementById('call-log-section').classList.remove('hidden-section');
-                // Default to 'search' sub-tab when entering Call Log
-                switchCallLogTab('search');
-            } else if (tabId === 'loan') {
-                btnLoan.classList.add('bg-blue-900');
-                document.getElementById('loan-page').classList.remove('hidden-section');
-                // Default to 'borrow' sub-tab when entering Loan
-                switchLoanTab('loan-tab-borrow');
-                loadLoanData();
-            }
+            if (tabId === 'call-log') switchCallLogTab('search');
+            else { switchLoanTab('loan-tab-borrow'); loadLoanData(); }
         }
 
-        // --- CALL LOG SUB-TAB LOGIC ---
-        function switchCallLogTab(subTabId) {
-            // Update Sub-tab Button Styles
-            const btnSearch = document.getElementById('btn-sub-search');
-            const btnRecords = document.getElementById('btn-sub-records');
-            
-            // Reset styles
-            [btnSearch, btnRecords].forEach(btn => {
-                btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-                btn.classList.add('text-gray-500');
+        function switchCallLogTab(subId) {
+            const s = document.getElementById('btn-sub-search');
+            const r = document.getElementById('btn-sub-records');
+            s.className = subId==='search' ? "px-4 md:px-6 py-2 text-sm md:text-base text-blue-600 border-b-2 border-blue-600 font-medium whitespace-nowrap" : "px-4 md:px-6 py-2 text-sm md:text-base text-gray-500 hover:text-blue-600 font-medium whitespace-nowrap";
+            r.className = subId==='records' ? "px-4 md:px-6 py-2 text-sm md:text-base text-blue-600 border-b-2 border-blue-600 font-medium whitespace-nowrap" : "px-4 md:px-6 py-2 text-sm md:text-base text-gray-500 hover:text-blue-600 font-medium whitespace-nowrap";
+            document.getElementById('sub-search-page').classList.toggle('hidden-section', subId !== 'search');
+            document.getElementById('sub-records-page').classList.toggle('hidden-section', subId !== 'records');
+            if(subId==='records') fetchRecords();
+        }
+
+        function switchLoanTab(tabId) {
+            document.querySelectorAll('.loan-tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            ['btn-loan-borrow', 'btn-loan-return', 'btn-loan-admin', 'btn-loan-history'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.className = "px-4 md:px-6 py-2 text-sm md:text-base text-gray-500 hover:text-blue-600 font-medium whitespace-nowrap";
             });
-
-            // Hide content sections
-            document.getElementById('sub-search-page').classList.add('hidden-section');
-            document.getElementById('sub-records-page').classList.add('hidden-section');
-
-            // Activate Selected
-            if (subTabId === 'search') {
-                btnSearch.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-                btnSearch.classList.remove('text-gray-500');
-                document.getElementById('sub-search-page').classList.remove('hidden-section');
-            } else if (subTabId === 'records') {
-                btnRecords.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-                btnRecords.classList.remove('text-gray-500');
-                document.getElementById('sub-records-page').classList.remove('hidden-section');
-                fetchRecords(); // Fetch data when tab is opened
-            }
+            const activeBtn = document.getElementById(tabId.replace('loan-tab-', 'btn-loan-'));
+            activeBtn.className = "px-4 md:px-6 py-2 text-sm md:text-base text-blue-600 border-b-2 border-blue-600 font-medium whitespace-nowrap";
+            if(tabId === 'loan-tab-history') loadLoanHistory();
         }
 
-
-        // ================= FORM FEATURES =================
-        function enableEdit(fieldId) {
-            const field = document.getElementById(fieldId);
-            field.readOnly = false;
-            field.focus();
-            field.classList.remove('bg-gray-50');
-            field.classList.add('bg-white');
-            showToast(`Anda kini boleh menyunting ${fieldId.toUpperCase()}`);
+        // ================= CALL LOG LOGIC =================
+        function enableEdit(id) {
+            const el = document.getElementById(id); el.readOnly = false; el.classList.replace('bg-gray-50', 'bg-white'); el.focus();
         }
-
         function createNewEntry() {
-            // Unlock all fields for manual entry
-            ['ic', 'nama', 'telefon', 'emel', 'gred', 'kod_ptj', 'department'].forEach(id => {
-                enableEdit(id);
-                document.getElementById(id).value = ''; // Clear fields
-            });
-            document.getElementById('ic').focus();
+            ['ic','nama','telefon','emel','gred','kod_ptj','department'].forEach(id => { enableEdit(id); document.getElementById(id).value = ''; });
             document.getElementById('search-results-dropdown').classList.add('hidden');
-            showToast("Sila isi maklumat secara manual.");
-            
-            // Trigger check validity since fields are now empty
             checkFormValidity();
         }
 
-        // ================= LIVE SEARCH FEATURE =================
-        function handleLiveSearch(query) {
-            const dropdown = document.getElementById('search-results-dropdown');
-            
-            // Clear existing timeout
-            if (searchTimeout) clearTimeout(searchTimeout);
-
-            if (!query || query.length < 2) {
-                dropdown.classList.add('hidden');
-                return;
-            }
-
-            // Debounce search by 300ms
+        function handleLiveSearch(q) {
+            const dd = document.getElementById('search-results-dropdown');
+            if(searchTimeout) clearTimeout(searchTimeout);
+            if(!q || q.length < 2) { dd.classList.add('hidden'); return; }
             searchTimeout = setTimeout(async () => {
-                // Show loading state
-                dropdown.classList.remove('hidden');
-                dropdown.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center">Sedang mencari...</div>';
-
-                // Query Supabase 'personnel' table
-                // Using 'ilike' for case-insensitive partial matching across multiple columns
-                const { data, error } = await supabase
-                    .from('personnel')
-                    .select('*')
-                    .or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%,kod_ptj.ilike.%${query}%,telefon.ilike.%${query}%,emel.ilike.%${query}%,department.ilike.%${query}%`)
-                    .limit(5);
-
-                if (error) {
-                    console.error(error);
-                    dropdown.innerHTML = '<div class="p-3 text-sm text-red-500 text-center">Ralat carian.</div>';
+                dd.classList.remove('hidden'); dd.innerHTML = '<div class="p-3 text-center">Searching...</div>';
+                const { data, error } = await supabase.from('personnel').select('*').or(`nama.ilike.%${q}%,ic_number.ilike.%${q}%`).limit(5);
+                if(!data || data.length === 0) {
+                    dd.innerHTML = `<div class="p-3 text-center"><button onclick="createNewEntry()" class="bg-blue-600 text-white px-4 py-1 rounded text-xs">+ Manual Entry</button></div>`;
                     return;
                 }
-
-                if (!data || data.length === 0) {
-                    dropdown.innerHTML = `
-                        <div class="p-3 text-sm text-gray-500 text-center flex flex-col gap-2">
-                            <span>Tiada rekod dijumpai.</span>
-                            <button onclick="createNewEntry()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-xs w-full">
-                                + Daftar Baru (Manual)
-                            </button>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Render Results
-                dropdown.innerHTML = '';
-                data.forEach(person => {
-                    const item = document.createElement('div');
-                    item.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 border-gray-100';
-                    item.innerHTML = `
-                        <div class="font-bold text-gray-800">${person.nama}</div>
-                        <div class="text-xs text-gray-500 flex justify-between mt-1">
-                            <span>IC: ${person.ic_number}</span>
-                            <span>${person.department || ''}</span>
-                        </div>
-                    `;
-                    item.onclick = () => fillFormWithPersonnel(person);
-                    dropdown.appendChild(item);
+                dd.innerHTML = '';
+                data.forEach(p => {
+                    const d = document.createElement('div'); d.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b';
+                    d.innerHTML = `<div class="font-bold">${p.nama}</div><div class="text-xs text-gray-500">${p.ic_number} - ${p.department}</div>`;
+                    d.onclick = () => {
+                        ['ic','nama','telefon','emel','gred','kod_ptj','department'].forEach(k => document.getElementById(k).value = p[k==='ic'?'ic_number':k] || '');
+                        dd.classList.add('hidden'); document.getElementById('global-search').value=''; checkFormValidity();
+                    };
+                    dd.appendChild(d);
                 });
-
             }, 300);
-        }
-
-        function fillFormWithPersonnel(person) {
-            document.getElementById('ic').value = person.ic_number || '';
-            document.getElementById('nama').value = person.nama || '';
-            document.getElementById('telefon').value = person.telefon || '';
-            document.getElementById('emel').value = person.emel || '';
-            document.getElementById('gred').value = person.gred || '';
-            document.getElementById('kod_ptj').value = person.kod_ptj || '';
-            document.getElementById('department').value = person.department || '';
-            
-            // Hide dropdown
-            document.getElementById('search-results-dropdown').classList.add('hidden');
-            document.getElementById('global-search').value = ''; // Clear search
-            showToast("Maklumat telah diisi!");
-            
-            // Re-check validity (since fields are now filled)
-            checkFormValidity();
         }
 
         document.getElementById('data-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // Construct combined notes from radio + dropdown + (manual input)
-            let selectedSystem = document.querySelector('input[name="system_type"]:checked')?.value || "Tiada Sistem";
-            // Map value back to Label for display if needed, but value is okay
-            const systemLabels = { "ecp450": "ECP450/Portal", "ecp400": "ECP400", "hcp400": "HCP400", "psa400": "PSA400/SOLMAN", "bp1": "BP1", "bwp": "BWP", "mycost": "MyCost" };
-            if(systemLabels[selectedSystem]) selectedSystem = systemLabels[selectedSystem];
-
-            const selectedIssue = document.getElementById('issue-dropdown').value || "Tiada Isu Dipilih";
-            let finalNote = `${selectedSystem} - ${selectedIssue}`;
-
-            if(selectedIssue === "Lain-lain") {
-                const otherInput = document.getElementById('other-issue-input').value;
-                if(otherInput) finalNote += ` (${otherInput})`;
-            }
-
+            const sys = document.querySelector('input[name="system_type"]:checked').value;
+            const iss = document.getElementById('issue-dropdown').value;
+            const oth = document.getElementById('other-issue-input').value;
+            const note = `${sys} - ${iss}${iss==='Lain-lain' ? ' ('+oth+')' : ''}`;
             const formData = {
                 ic_number: document.getElementById('ic').value,
                 nama: document.getElementById('nama').value,
@@ -1192,758 +757,201 @@
                 gred: document.getElementById('gred').value,
                 kod_ptj: document.getElementById('kod_ptj').value,
                 department: document.getElementById('department').value,
-                confirmation: 'TIDAK', // Default to TIDAK since removed from UI
-                notes: finalNote, // Saved here
-                submitted_by: currentUser.id,
-                perekod: currentUser.email // Save email as 'perekod'
+                confirmation: 'TIDAK', notes: note, submitted_by: currentUser.id, perekod: currentUser.email
             };
-
-            const { error } = await supabase
-                .from('rekod')
-                .insert([formData]);
-
-            if (error) {
-                alert("Ralat menyimpan: " + error.message);
-            } else {
-                showToast("Rekod berjaya disimpan!");
-                document.getElementById('data-form').reset();
-                
-                // Reset custom inputs manually
-                document.getElementById('issue-dropdown-container').classList.add('hidden');
-                document.getElementById('other-issue-container').classList.add('hidden');
-                document.querySelectorAll('input[name="system_type"]').forEach(r => r.checked = false); // Clear radios
-
-                updateDateDisplay();
-                // Reset ReadOnly states
-                ['ic','nama','telefon','emel','gred','kod_ptj','department'].forEach(id => {
-                    const el = document.getElementById(id);
-                    el.readOnly = true;
-                    el.classList.add('bg-gray-50');
-                });
-                
-                // Reset submit button state
-                checkFormValidity();
-            }
+            const { error } = await supabase.from('rekod').insert([formData]);
+            if(error) alert(error.message);
+            else { showToast("Rekod Disimpan!"); document.getElementById('data-form').reset(); checkFormValidity(); }
         });
-        
-        async function updateStatus(id, newStatus) {
-            const now = new Date().toISOString();
-            // Also update the 'status_updated_by_name' column with current user's email
-            const { error } = await supabase
-                .from('rekod')
-                .update({ 
-                    confirmation: newStatus, 
-                    status_updated_at: now,
-                    status_updated_by_name: currentUser.email // Record who made the change
-                })
-                .eq('id', id);
-
-            if (error) {
-                alert("Gagal mengemaskini status: " + error.message);
-                fetchRecords(); // Revert UI
-            } else {
-                showToast("Status dikemaskini!");
-                fetchRecords(); // Refresh to show new date and updated by
-            }
-        }
-
-        // ================= RECORDS, EXPORT & IMPORT =================
-        let currentRecords = [];
 
         async function fetchRecords() {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="loader"></div></td></tr>';
-
-            const { data, error } = await supabase
-                .from('rekod')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-red-500 py-4">${error.message}</td></tr>`;
-            } else {
-                currentRecords = data;
-                renderTable(data);
-            }
-        }
-
-        async function renderTable(data) {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-gray-500">Tiada rekod dijumpai.</td></tr>';
-                return;
-            }
-
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-gray-200 hover:bg-gray-50";
-                const date = new Date(row.created_at).toLocaleString('ms-MY');
-                
-                // Use 'perekod' column, fallback to submitted_by ID or '-'
-                const recorder = row.perekod ? row.perekod : (row.submitted_by ? row.submitted_by.substring(0, 8) + '...' : '-');
-                const statusDate = row.status_updated_at ? new Date(row.status_updated_at).toLocaleString('ms-MY') : '-';
-                // Use 'status_updated_by_name' column
-                const statusUpdater = row.status_updated_by_name ? row.status_updated_by_name : '-';
-                
-                const statusSelect = `
-                    <select onchange="updateStatus('${row.id}', this.value)" class="border rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="YA" ${row.confirmation === 'YA' ? 'selected' : ''}>YA</option>
-                        <option value="TIDAK" ${row.confirmation === 'TIDAK' ? 'selected' : ''}>TIDAK</option>
-                    </select>
-                `;
-
+            const tb = document.getElementById('table-body'); tb.innerHTML = '<tr><td colspan="9" class="text-center"><div class="loader"></div></td></tr>';
+            const { data, error } = await supabase.from('rekod').select('*').order('created_at', { ascending: false });
+            tb.innerHTML = '';
+            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="9" class="text-center p-4">Tiada rekod.</td></tr>'; return; }
+            currentRecords = data;
+            data.forEach(r => {
+                const tr = document.createElement('tr'); tr.className = "border-b hover:bg-gray-50";
                 tr.innerHTML = `
-                    <td class="py-3 px-4 whitespace-nowrap">${date}</td>
-                    <td class="py-3 px-4">${row.ic_number || '-'}</td>
-                    <td class="py-3 px-4 font-medium">${row.nama || '-'}</td>
-                    <td class="py-3 px-4">${row.department || '-'}</td>
-                    <td class="py-3 px-4 text-gray-500 text-sm max-w-xs truncate">${row.notes || '-'}</td>
-                    <td class="py-3 px-4 text-xs text-gray-500">${recorder}</td>
-                    <td class="py-3 px-4 text-xs text-gray-500">${statusDate}</td>
-                    <td class="py-3 px-4 text-xs text-gray-500">${statusUpdater}</td>
-                    <td class="py-3 px-4">${statusSelect}</td>
+                    <td class="p-3">${new Date(r.created_at).toLocaleString('ms-MY')}</td>
+                    <td class="p-3">${r.ic_number}</td><td class="p-3 font-medium">${r.nama}</td><td class="p-3">${r.department}</td>
+                    <td class="p-3 text-sm text-gray-500">${r.notes}</td>
+                    <td class="p-3 text-xs">${r.perekod||'-'}</td>
+                    <td class="p-3 text-xs">${r.status_updated_at?new Date(r.status_updated_at).toLocaleString():'-'}</td>
+                    <td class="p-3 text-xs">${r.status_updated_by_name||'-'}</td>
+                    <td class="p-3"><select onchange="updateStatus('${r.id}',this.value)" class="border rounded text-xs"><option ${r.confirmation==='YA'?'selected':''}>YA</option><option ${r.confirmation==='TIDAK'?'selected':''}>TIDAK</option></select></td>
                 `;
-                tbody.appendChild(tr);
+                tb.appendChild(tr);
             });
         }
 
-        // --- Export Functions ---
-        function exportToExcel() {
-            if(currentRecords.length === 0) { alert("Tiada data untuk diexport"); return; }
-            
-            const cleanData = currentRecords.map(r => ({
-                "Tarikh Masa Panggilan / Emel": new Date(r.created_at).toLocaleString('ms-MY'),
-                "IC": r.ic_number,
-                "Nama": r.nama,
-                "Telefon": r.telefon,
-                "Emel": r.emel,
-                "Gred": r.gred,
-                "Kod PTJ": r.kod_ptj,
-                "Jabatan": r.department,
-                "Perkara / Masalah": r.notes,
-                "Direkod Oleh": r.perekod || r.submitted_by,
-                "Tarikh Perubahan Status": r.status_updated_at ? new Date(r.status_updated_at).toLocaleString('ms-MY') : '-',
-                "Status Dikemaskini Oleh": r.status_updated_by_name || '-',
-                "Status": r.confirmation
-            }));
-
-            const ws = XLSX.utils.json_to_sheet(cleanData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Rekod");
-            XLSX.writeFile(wb, "Rekod_Log.xlsx");
+        async function updateStatus(id, val) {
+            await supabase.from('rekod').update({ confirmation: val, status_updated_at: new Date(), status_updated_by_name: currentUser.email }).eq('id', id);
+            fetchRecords();
         }
 
-        function exportToPDF() {
-            if(currentRecords.length === 0) { alert("Tiada data untuk diexport"); return; }
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
-            doc.text("Laporan Rekod Log", 14, 15);
-            doc.autoTable({
-                head: [['Masa', 'IC', 'Nama', 'Jabatan', 'Nota', 'Direkod Oleh', 'Tarikh Status', 'Status Oleh', 'Status']],
-                body: currentRecords.map(r => [
-                    new Date(r.created_at).toLocaleDateString(),
-                    r.ic_number,
-                    r.nama,
-                    r.department,
-                    r.notes,
-                    r.perekod || (r.submitted_by ? r.submitted_by.substring(0,8) : '-'),
-                    r.status_updated_at ? new Date(r.status_updated_at).toLocaleDateString() : '-',
-                    r.status_updated_by_name || '-',
-                    r.confirmation
-                ]),
-                startY: 20,
-                styles: { fontSize: 8 },
-                columnStyles: { 4: { cellWidth: 40 } } // Limit Note column width
-            });
-            doc.save("Rekod_Log.pdf");
-        }
-
-        // --- Clear Database Logic (Unified Modal) ---
-        let clearActionType = ''; // 'rekod', 'personnel', 'user_ba'
-
-        function confirmClearDatabase() {
-            clearActionType = 'rekod';
-            document.getElementById('modal-title').textContent = "Padam Semua REKOD?";
-            document.getElementById('modal-message').innerHTML = "Adakah anda pasti mahu memadam <strong>SEMUA REKOD HARIAN</strong>? <br>Tindakan ini tidak boleh dikembalikan.";
-            document.getElementById('delete-modal').classList.remove('hidden');
-        }
-
-        function confirmClearMasterDatabase() {
-            clearActionType = 'personnel';
-            document.getElementById('modal-title').textContent = "Padam Data Induk?";
-            document.getElementById('modal-message').innerHTML = "Adakah anda pasti mahu memadam <strong>SEMUA DATA INDUK</strong>? <br>Carian live tidak akan berfungsi sehingga anda upload data baru.";
-            document.getElementById('delete-modal').classList.remove('hidden');
-        }
-
-        function confirmClearUserDatabase() {
-            clearActionType = 'user_ba';
-            document.getElementById('modal-title').textContent = "Padam Pengguna Pinjaman?";
-            document.getElementById('modal-message').innerHTML = "Adakah anda pasti mahu memadam <strong>SEMUA PENGGUNA (User BA)</strong>? <br>Dropdown nama peminjam akan kosong.";
-            document.getElementById('delete-modal').classList.remove('hidden');
-        }
-
-        function closeDeleteModal() {
-            document.getElementById('delete-modal').classList.add('hidden');
-        }
-
-async function executeClearDatabase() {
-            closeDeleteModal();
-            showToast("Sedang memadam...");
-            
-            // Tentukan nama table dan column untuk filter delete
-            let tableName = '';
-            let targetColumn = 'id'; // Default untuk table lain
-            
-            if (clearActionType === 'personnel') {
-                tableName = 'personnel';
-                targetColumn = 'id'; // Table personnel ada ID
-            } else if (clearActionType === 'rekod') {
-                tableName = 'rekod';
-                targetColumn = 'id'; // Table rekod ada ID
-            } else if (clearActionType === 'user_ba') {
-                tableName = 'user_ba';
-                targetColumn = 'name'; // <--- TUKAR: Guna 'name' sebab 'id' tiada
-            }
-            
-            if (!tableName) return;
-
-            try {
-                // Logic Delete:
-                // Kita guna .neq(column, 'mustahil') untuk select semua row
-                // Contoh: Delete semua row di mana name != 'X_SYSTEM_X' (iaitu semua nama)
-                
-                const { data, error } = await supabase
-                    .from(tableName)
-                    .delete()
-                    .neq(targetColumn, 'X_MUSTAHIL_ADA_X') 
-                    .select();
-
-                if (error) {
-                    throw error;
-                }
-
-                alert(`Berjaya! Data dalam '${tableName}' telah dipadam.`);
-                
-                // Refresh UI ikut table mana yang dipadam
-                if (tableName === 'rekod') fetchRecords();
-                if (tableName === 'personnel') {
-                    document.getElementById('global-search').value = '';
-                    document.getElementById('search-results-dropdown').classList.add('hidden');
-                }
-                if (tableName === 'user_ba') {
-                    loadLoanData(); // Refresh dropdown user
-                }
-
-            } catch (err) {
-                console.error('Delete Error:', err);
-                // Mesej Ralat Mesra Pengguna
-                if (err.message.includes('Policy')) {
-                    alert("Gagal memadam: Ralat 'Policy'.\nSila run SQL yang saya beri tadi di Supabase SQL Editor.");
-                } else if (err.message.includes('column')) {
-                     alert("Gagal memadam: " + err.message + "\nTable ini mungkin tiada column yang dicari.");
-                } else {
-                    alert("Gagal memadam: " + err.message);
-                }
-            }
-        }
-        // --- Import Functions (Record & Master Data & Loan System) ---
-        function triggerImport() { document.getElementById('excel-upload').click(); }
-        function triggerMasterUpload() { document.getElementById('master-data-upload').click(); }
-        function triggerLoanUpload(type) {
-            if(type === 'user') document.getElementById('loan-user-upload').click();
-            if(type === 'inventory') document.getElementById('loan-inventory-upload').click();
-            if(type === 'records') document.getElementById('loan-records-upload').click();
-        }
-
-        // Handle Master Data Upload (Personnel Table)
-        function handleMasterDataUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            showToast("Memproses Data Induk...");
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-                    if (jsonData.length === 0) { alert("Fail kosong."); return; }
-
-                    // Map Excel columns to Database columns
-                    const recordsToInsert = jsonData.map(row => ({
-                        ic_number: row.ic_number || row.IC || row.ic || '',
-                        nama: row.nama || row.Name || row.Nama || '',
-                        telefon: row.telefon || row.Phone || row.Telefon || '',
-                        emel: row.emel || row.Email || row.Emel || '',
-                        gred: row.gred || row.Grade || row.Gred || '',
-                        kod_ptj: row.kod_ptj || row.KodPTJ || '',
-                        department: row.department || row.Department || row.Jabatan || ''
-                    }));
-
-                    const { error } = await supabase.from('personnel').insert(recordsToInsert);
-                    
-                    if (error) alert("Ralat Import Master Data: " + error.message);
-                    else showToast(`Berjaya muat naik ${recordsToInsert.length} data induk!`);
-
-                } catch (err) {
-                    console.error(err);
-                    alert("Ralat memproses fail Excel.");
-                }
-                event.target.value = '';
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // Handle Record Upload (Rekod Table)
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            showToast("Sedang memproses fail...");
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-                    if (jsonData.length === 0) { alert("Fail kosong."); return; }
-
-                    const recordsToInsert = jsonData.map(row => ({
-                        ic_number: row.ic_number || row.IC || row.ic || '',
-                        nama: row.nama || row.Name || row.Nama || '',
-                        telefon: row.telefon || row.Phone || row.Telefon || '',
-                        emel: row.emel || row.Email || row.Emel || '',
-                        gred: row.gred || row.Grade || row.Gred || '',
-                        kod_ptj: row.kod_ptj || row.KodPTJ || '',
-                        department: row.department || row.Department || row.Jabatan || '',
-                        notes: row.notes || row.Notes || row.Nota || '',
-                        confirmation: row.confirmation || row.Status || 'TIDAK',
-                        submitted_by: currentUser.id
-                    }));
-
-                    const { error } = await supabase.from('rekod').insert(recordsToInsert);
-
-                    if (error) alert("Ralat semasa import: " + error.message);
-                    else {
-                        showToast(`Berjaya import ${recordsToInsert.length} rekod!`);
-                        fetchRecords();
-                    }
-                } catch (err) {
-                    console.error(err);
-                    alert("Ralat memproses fail Excel.");
-                }
-                event.target.value = '';
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // Handle Loan Users Upload (UPDATED to include Email)
-        function handleLoanUserUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            showToast("Memproses fail pengguna...");
-            
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(sheet);
-                    
-                    const inserts = [];
-                    
-                    json.forEach(r => {
-                        const keys = Object.keys(r);
-                        let nameVal = null;
-                        let emailVal = null;
-
-                        // --- FIND NAME ---
-                        if (r.name) nameVal = r.name;
-                        else if (r.Name) nameVal = r.Name;
-                        else if (r.Nama) nameVal = r.Nama;
-                        else {
-                            // Fuzzy search for Name
-                            const nameKey = keys.find(k => k.toLowerCase().includes('name') || k.toLowerCase().includes('nama'));
-                            if (nameKey) nameVal = r[nameKey];
-                        }
-
-                        // --- FIND EMAIL ---
-                        if (r.email) emailVal = r.email;
-                        else if (r.Email) emailVal = r.Email;
-                        else if (r.Emel) emailVal = r.Emel;
-                        else {
-                            // Fuzzy search for Email
-                            const emailKey = keys.find(k => k.toLowerCase().includes('email') || k.toLowerCase().includes('emel') || k.toLowerCase().includes('e-mel'));
-                            if (emailKey) emailVal = r[emailKey];
-                        }
-
-                        // Only add if Name exists (Email is optional but recommended)
-                        if (nameVal && typeof nameVal === 'string' && nameVal.trim().length > 0) {
-                            inserts.push({ 
-                                name: nameVal.trim(),
-                                emel: emailVal ? emailVal.trim() : '' // Save email or empty string
-                            });
-                        }
-                    });
-
-                    if(inserts.length === 0) {
-                        alert("Tiada data pengguna dijumpai. Pastikan fail Excel ada header 'Nama' dan 'Emel'.");
-                        return;
-                    }
-
-                    // Insert into Supabase
-                    const { error } = await supabase.from('user_ba').insert(inserts);
-                    
-                    if(error) {
-                        alert("Ralat Upload: " + error.message);
-                    } else { 
-                        alert(`Berjaya! ${inserts.length} pengguna telah ditambah dengan maklumat Nama & Emel.`); 
-                        loadLoanData(); // Refresh dropdowns
-                    }
-                } catch(err) { 
-                    console.error(err);
-                    alert("Ralat memproses fail Excel: " + err.message); 
-                }
-                event.target.value = ''; // Reset input
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // Handle Loan Inventory Upload
-        function handleLoanInventoryUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(sheet);
-                    // Map assumes Tag, Type, Serial columns
-                    const inserts = json.map(r => ({ 
-                        tag: r.Tag || r.tag, 
-                        type: r.Type || r.type || r.Jenis,
-                        serial: r.Serial || r.serial || r.Siri,
-                        status: 'Tersedia'
-                    }));
-                    const { error } = await supabase.from('device_inventory').insert(inserts);
-                    if(error) alert(error.message);
-                    else { alert(`Success! ${inserts.length} devices added.`); loadLoanData(); }
-                } catch(err) { alert("Error parsing excel"); }
-                event.target.value = '';
-            };
-            reader.readAsArrayBuffer(file);
-        }
-        
-        // Handle Loan Records Upload
-        function handleLoanRecordsUpload(event) {
-             const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(sheet);
-                    
-                    // Map Excel to loan records
-                    const inserts = json.map(r => ({ 
-                        user_name: r.Peminjam || r.User || r.user_name,
-                        device_tag: r.Tag || r.Device || r.device_tag,
-                        start_date: r.Start || r.start_date || r.Mula,
-                        end_date: r.End || r.end_date || r.Tamat,
-                        usage_type: r.Type || r.usage_type || 'Kegunaan Dalaman',
-                        status: r.Status || r.status || 'Active'
-                    }));
-                    
-                    const { error } = await supabase.from('rekod_pinjaman').insert(inserts);
-                    if(error) alert(error.message);
-                    else { alert(`Success! ${inserts.length} loan records added.`); loadLoanData(); }
-                } catch(err) { alert("Error parsing excel"); }
-                event.target.value = '';
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-
-        // ================= LOAN SYSTEM LOGIC =================
+        // ================= LOAN LOGIC =================
         async function loadLoanData() {
-            // 1. Fetch Users from 'user_ba' (Sorted Alphabetically)
-            const { data: users } = await supabase
-                .from('user_ba')
-                .select('name')
-                .order('name', { ascending: true }); // Added Sort
+            const { data: users } = await supabase.from('user_ba').select('name').order('name');
+            const ul = document.getElementById('userList'); ul.innerHTML = '';
+            if(users) users.forEach(u => { const o = document.createElement('option'); o.value=u.name; ul.appendChild(o); });
 
-            const uList = document.getElementById('userList');
-            uList.innerHTML = '';
-            if(users) users.forEach(u => {
-                const opt = document.createElement('option');
-                opt.value = u.name;
-                uList.appendChild(opt);
+            const { data: devices } = await supabase.from('device_inventory').select('*').eq('status','Tersedia').order('tag');
+            const ds = document.getElementById('deviceSelect'); ds.innerHTML = '<option value="" disabled selected>Pilih Peranti...</option>';
+            if(devices) devices.forEach(d => { const o = document.createElement('option'); o.value=d.tag; o.text=`${d.tag} - ${d.type}`; ds.appendChild(o); });
+
+            const { data: rented } = await supabase.from('device_inventory').select('*').eq('status','Dipinjam').order('tag');
+            const rs = document.getElementById('returnSelect'); rs.innerHTML = '<option value="" disabled selected>Pilih Peranti...</option>';
+            if(rented) rented.forEach(d => { const o = document.createElement('option'); o.value=d.tag; o.text=`${d.tag} - ${d.type}`; rs.appendChild(o); });
+
+            const { data: active } = await supabase.from('rekod_pinjaman').select('*').eq('status','Active').order('created_at', {ascending:false});
+            const atb = document.getElementById('active-loans-body'); atb.innerHTML = '';
+            if(active) active.forEach(l => {
+                atb.innerHTML += `<tr class="border-b"><td class="p-2">${l.user_name}</td><td class="p-2 text-blue-600">${l.device_tag}</td><td class="p-2">${l.end_date}</td><td class="p-2 text-xs text-gray-500">${l.usage_details||'-'}</td></tr>`;
             });
-
-            // 2. Fetch Available Devices (Sorted Alphabetically by Tag)
-            const { data: devices } = await supabase
-                .from('device_inventory')
-                .select('*')
-                .eq('status', 'Tersedia')
-                .order('tag', { ascending: true }); // <--- THIS LINE SORTS THE LIST
-
-            const dSel = document.getElementById('deviceSelect');
-            dSel.innerHTML = '<option value="" disabled selected>Pilih Peranti...</option>';
-            if(devices) devices.forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d.tag;
-                opt.text = `${d.tag} - ${d.type} (${d.serial})`;
-                dSel.appendChild(opt);
-            });
-
-            // 3. Fetch Rented Devices for Return (Sorted Alphabetically)
-            const { data: rented } = await supabase
-                .from('device_inventory')
-                .select('*')
-                .eq('status', 'Dipinjam')
-                .order('tag', { ascending: true }); // Added Sort
-
-            const rSel = document.getElementById('returnSelect');
-            rSel.innerHTML = '<option value="" disabled selected>Pilih Peranti Dipinjam...</option>';
-            if(rented) rented.forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d.tag;
-                opt.text = `${d.tag} - ${d.type}`;
-                rSel.appendChild(opt);
-            });
-
-            // 4. Fetch Active Loans for Admin Table
-            const { data: loans } = await supabase
-                .from('rekod_pinjaman')
-                .select('*')
-                .eq('status', 'Active')
-                .order('created_at', { ascending: false }); // Show newest loans first
-
-            const tbody = document.getElementById('active-loans-body');
-            tbody.innerHTML = '';
-            if(loans && loans.length > 0) {
-                loans.forEach(l => {
-                    tbody.innerHTML += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-2">${l.user_name}</td>
-                            <td class="p-2 font-medium text-blue-600">${l.device_tag}</td>
-                            <td class="p-2">${l.end_date}</td>
-                            <td class="p-2 text-xs text-gray-500">${l.usage_details || '-'}</td>
-                        </tr>
-                    `;
-                });
-            } else {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Tiada pinjaman aktif.</td></tr>';
-            }
-        }        
-        
-        async function loadLoanHistory() {
-            const { data: loans } = await supabase.from('rekod_pinjaman').select('*').order('created_at', { ascending: false });
-            currentLoanHistory = loans || []; // Store for export
-            const tbody = document.getElementById('loan-history-body');
-            tbody.innerHTML = '';
-            
-            if(!loans || loans.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Tiada rekod pinjaman.</td></tr>';
-                return;
-            }
-            
-            loans.forEach(l => {
-                const applicationDate = l.created_at ? new Date(l.created_at).toLocaleString() : '-'; // Tarikh Mohon
-                const returnDate = l.return_date ? new Date(l.return_date).toLocaleString() : '-'; // Tarikh Pulang (Sebenar)
-                const statusClass = l.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
-                
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3">${applicationDate}</td>
-                        <td class="p-3 font-medium">${l.user_name}</td>
-                        <td class="p-3">${l.device_tag}</td>
-                        <td class="p-3">${l.start_date} - ${l.end_date}</td>
-                        <td class="p-3">${returnDate}</td>
-                        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${statusClass}">${l.status}</span></td>
-                    </tr>
-                `;
-            });
-        }
-        
-        // Export Functions for Loan History
-        function exportLoanHistoryToExcel() {
-            if(!currentLoanHistory || currentLoanHistory.length === 0) { alert("Tiada data untuk diexport"); return; }
-            
-            const cleanData = currentLoanHistory.map(r => ({
-                "Tarikh Mohon": r.created_at ? new Date(r.created_at).toLocaleString() : '-',
-                "Peminjam": r.user_name,
-                "Peranti": r.device_tag,
-                "Tarikh Mula": r.start_date,
-                "Tarikh Tamat": r.end_date,
-                "Tarikh Pulang (Sebenar)": r.return_date ? new Date(r.return_date).toLocaleString() : '-',
-                "Status": r.status,
-                "Tujuan": r.usage_details
-            }));
-            
-            const ws = XLSX.utils.json_to_sheet(cleanData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Sejarah Pinjaman");
-            XLSX.writeFile(wb, "Rekod_Pinjaman_ICT.xlsx");
-        }
-        
-        function exportLoanHistoryToPDF() {
-            if(!currentLoanHistory || currentLoanHistory.length === 0) { alert("Tiada data untuk diexport"); return; }
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text("Laporan Sejarah Pinjaman ICT", 14, 15);
-            doc.autoTable({
-                head: [['Tarikh Mohon', 'Peminjam', 'Peranti', 'Tempoh', 'Tarikh Pulang', 'Status']],
-                body: currentLoanHistory.map(r => [
-                    r.created_at ? new Date(r.created_at).toLocaleDateString() : '-',
-                    r.user_name,
-                    r.device_tag,
-                    `${r.start_date} - ${r.end_date}`,
-                    r.return_date ? new Date(r.return_date).toLocaleDateString() : '-',
-                    r.status
-                ]),
-                startY: 20
-            });
-            doc.save("Rekod_Pinjaman_ICT.pdf");
-        }
-
-        function switchLoanTab(tabId) {
-            document.querySelectorAll('.loan-tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(tabId).classList.remove('hidden');
-            
-            // Reset button styles
-            ['btn-loan-borrow', 'btn-loan-return', 'btn-loan-admin', 'btn-loan-history'].forEach(id => {
-                const btn = document.getElementById(id);
-                btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-                btn.classList.add('text-gray-500');
-            });
-            
-            // Set active button style
-            const activeBtnId = tabId.replace('loan-tab-', 'btn-loan-');
-            const activeBtn = document.getElementById(activeBtnId);
-            activeBtn.classList.remove('text-gray-500');
-            activeBtn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-            
-            // Load history if needed
-            if(tabId === 'loan-tab-history') {
-                loadLoanHistory();
-            }
         }
 
         async function submitLoan() {
-            const userName = document.getElementById('loanUserName').value;
-            const deviceTag = document.getElementById('deviceSelect').value;
-            const startDate = document.getElementById('loanStartDate').value;
-            const endDate = document.getElementById('loanEndDate').value;
-            const usageType = document.getElementById('usageType').value;
-            const details = document.getElementById('usageDetails').value;
-
-            if(!userName || !deviceTag || !startDate || !endDate || !usageType) {
-                alert("Sila isi semua maklumat mandatori.");
-                return;
-            }
-
-            // 1. Create Loan Record (Supabase automatically adds created_at timestamp)
-            const { error: loanError } = await supabase.from('rekod_pinjaman').insert([{
-                user_name: userName,
-                device_tag: deviceTag,
-                start_date: startDate,
-                end_date: endDate,
-                usage_type: usageType,
-                usage_details: details,
-                status: 'Active'
-            }]);
-
-            if(loanError) {
-                alert("Ralat pinjaman: " + loanError.message);
-                return;
-            }
-
-            // 2. Update Device Status
-            await supabase.from('device_inventory').update({ status: 'Dipinjam' }).eq('tag', deviceTag);
-
-            alert("Pinjaman berjaya direkodkan! (Tarikh & Masa dicatatkan)");
-            document.getElementById('loanForm').reset();
-            loadLoanData(); // Refresh lists
+            const u = document.getElementById('loanUserName').value, d = document.getElementById('deviceSelect').value, s = document.getElementById('loanStartDate').value, e = document.getElementById('loanEndDate').value, t = document.getElementById('usageType').value;
+            if(!u || !d || !s || !e || !t) { alert("Sila isi semua."); return; }
+            const { error } = await supabase.from('rekod_pinjaman').insert([{ user_name: u, device_tag: d, start_date: s, end_date: e, usage_type: t, usage_details: document.getElementById('usageDetails').value, status: 'Active' }]);
+            if(!error) { await supabase.from('device_inventory').update({status:'Dipinjam'}).eq('tag',d); alert("Berjaya!"); document.getElementById('loanForm').reset(); loadLoanData(); }
         }
 
         async function submitReturn() {
-            const tag = document.getElementById('returnSelect').value;
-            if(!tag) { alert("Sila pilih peranti."); return; }
-
-            // 1. Mark loan as Returned with explicit current timestamp
-            // Find active loan for this device
-            const { data: loan } = await supabase.from('rekod_pinjaman')
-                .select('id')
-                .eq('device_tag', tag)
-                .eq('status', 'Active')
-                .single();
-
-            if(loan) {
-                await supabase.from('rekod_pinjaman').update({ 
-                    status: 'Returned', 
-                    return_date: new Date().toISOString() // Records current date/time
-                }).eq('id', loan.id);
-            }
-
-            // 2. Update Device Status
-            await supabase.from('device_inventory').update({ status: 'Tersedia' }).eq('tag', tag);
-
-            alert("Peranti berjaya dipulangkan! (Tarikh & Masa dicatatkan)");
-            loadLoanData();
+            const tag = document.getElementById('returnSelect').value; if(!tag) return;
+            const { data: l } = await supabase.from('rekod_pinjaman').select('id').eq('device_tag', tag).eq('status','Active').single();
+            if(l) await supabase.from('rekod_pinjaman').update({status:'Returned', return_date: new Date()}).eq('id',l.id);
+            await supabase.from('device_inventory').update({status:'Tersedia'}).eq('tag',tag);
+            alert("Dipulangkan!"); loadLoanData();
         }
 
-        async function addUser() {
-            const name = document.getElementById('newUserName').value;
-            if(!name) return;
-            const { error } = await supabase.from('user_ba').insert([{ name }]);
-            if(error) alert("Ralat: " + error.message);
-            else {
-                alert("Pengguna ditambah!");
-                document.getElementById('newUserName').value = '';
-                loadLoanData();
-            }
+        async function loadLoanHistory() {
+            const { data: loans } = await supabase.from('rekod_pinjaman').select('*').order('created_at',{ascending:false});
+            currentLoanHistory = loans || [];
+            const tb = document.getElementById('loan-history-body'); tb.innerHTML = '';
+            loans.forEach(l => {
+                tb.innerHTML += `<tr class="border-b"><td class="p-3">${new Date(l.created_at).toLocaleDateString()}</td><td class="p-3">${l.user_name}</td><td class="p-3">${l.device_tag}</td><td class="p-3">${l.start_date} - ${l.end_date}</td><td class="p-3">${l.return_date?new Date(l.return_date).toLocaleDateString():'-'}</td><td class="p-3">${l.status}</td></tr>`;
+            });
         }
 
-        async function addDevice() {
-            const tag = document.getElementById('newTag').value;
-            const type = document.getElementById('newType').value;
-            const serial = document.getElementById('newSerial').value;
+        // ================= ADMIN & BULK OPS =================
+        function triggerImport() { document.getElementById('excel-upload').click(); }
+        function triggerMasterUpload() { document.getElementById('master-data-upload').click(); }
+        function triggerLoanUpload(t) { 
+            if(t==='user') document.getElementById('loan-user-upload').click();
+            if(t==='inventory') document.getElementById('loan-inventory-upload').click();
+            if(t==='records') document.getElementById('loan-records-upload').click();
+        }
+        function handleMasterDataUpload(e) { processExcel(e.target.files[0], 'personnel', (r)=>({ic_number:r.IC||r.ic_number, nama:r.Name||r.nama, telefon:r.Phone||r.telefon, emel:r.Email||r.emel, gred:r.Grade||r.gred, kod_ptj:r.KodPTJ||r.kod_ptj, department:r.Department||r.department})); }
+        function handleFileUpload(e) { processExcel(e.target.files[0], 'rekod', (r)=>({ic_number:r.IC, nama:r.Name, confirmation:'TIDAK', notes:r.Notes||r.notes, submitted_by:currentUser.id})); }
+        function handleLoanInventoryUpload(e) { processExcel(e.target.files[0], 'device_inventory', (r)=>({tag:r.Tag||r.tag, type:r.Type||r.type, serial:r.Serial||r.serial, status:'Tersedia'})); }
+        function handleLoanRecordsUpload(e) { processExcel(e.target.files[0], 'rekod_pinjaman', (r)=>({user_name:r.User||r.user_name, device_tag:r.Tag, start_date:r.Start, end_date:r.End, status:r.Status||'Active'})); }
+        
+        // UPDATED USER UPLOAD
+        function handleLoanUserUpload(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    const inserts = [];
+                    json.forEach(r => {
+                        const keys = Object.keys(r);
+                        let nameVal = r.name || r.Name || r.Nama || r[keys.find(k=>k.match(/name|nama/i))];
+                        let emailVal = r.email || r.Email || r.Emel || r[keys.find(k=>k.match(/email|emel/i))];
+                        if (nameVal && typeof nameVal === 'string') inserts.push({ name: nameVal.trim(), emel: emailVal ? emailVal.trim() : '' });
+                    });
+                    if(inserts.length === 0) { alert("No data found."); return; }
+                    const { error } = await supabase.from('user_ba').insert(inserts);
+                    if(error) alert(error.message); else { alert(`Added ${inserts.length} users.`); loadLoanData(); }
+                } catch(err) { alert("Error parsing Excel."); }
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processExcel(file, table, mapFn) {
+            if(!file) return; const reader = new FileReader();
+            reader.onload = async (e) => {
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]).map(mapFn);
+                const { error } = await supabase.from(table).insert(data);
+                if(error) alert(error.message); else { showToast("Import Successful!"); if(table==='rekod') fetchRecords(); if(table.includes('inventory')) loadLoanData(); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- CLEAR DATABASE LOGIC (UPDATED) ---
+        function confirmClearDatabase() { clearActionType='rekod'; openDelModal("Padam REKOD HARIAN?"); }
+        function confirmClearMasterDatabase() { clearActionType='personnel'; openDelModal("Padam DATA INDUK?"); }
+        function confirmClearUserDatabase() { clearActionType='user_ba'; openDelModal("Padam SEMUA PENGGUNA?"); }
+        function openDelModal(t) { document.getElementById('modal-title').innerText=t; document.getElementById('delete-modal').classList.remove('hidden'); }
+        function closeDeleteModal() { document.getElementById('delete-modal').classList.add('hidden'); }
+
+        async function executeClearDatabase() {
+            closeDeleteModal(); showToast("Deleting...");
+            let table = '', col = 'id';
+            if(clearActionType==='personnel') table='personnel';
+            if(clearActionType==='rekod') table='rekod';
+            if(clearActionType==='user_ba') { table='user_ba'; col='name'; } // FIX: user_ba uses name not id
             
-            if(!tag || !serial) return;
-
-            const { error } = await supabase.from('device_inventory').insert([{
-                tag, type, serial, status: 'Tersedia'
-            }]);
-
-            if(error) alert("Ralat: " + error.message);
-            else {
-                alert("Peranti ditambah!");
-                document.getElementById('newTag').value = '';
-                document.getElementById('newSerial').value = '';
-                loadLoanData();
-            }
+            try {
+                const { error } = await supabase.from(table).delete().neq(col, 'X_IMPOSSIBLE_VAL');
+                if(error) throw error;
+                alert("Data deleted.");
+                if(table==='rekod') fetchRecords();
+                if(table==='user_ba') loadLoanData();
+            } catch(e) { alert("Delete failed: " + e.message); }
         }
 
-        // ================= UTILS =================
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.remove('opacity-0', 'translate-y-20');
-            setTimeout(() => {
-                t.classList.add('opacity-0', 'translate-y-20');
-            }, 3000);
+        // --- OVERDUE EMAIL LOGIC (NEW) ---
+        async function checkOverdueLoans() {
+            showToast("Checking records...");
+            const { data: loans } = await supabase.from('rekod_pinjaman').select('*').eq('status', 'Active');
+            const { data: users } = await supabase.from('user_ba').select('name, emel');
+            
+            const today = new Date(); today.setHours(0,0,0,0);
+            const overdue = loans.filter(l => new Date(l.end_date) < today);
+            
+            const tbody = document.getElementById('overdue-list-body'); tbody.innerHTML = '';
+            const modal = document.getElementById('overdue-modal');
+            document.getElementById('no-overdue-msg').classList.toggle('hidden', overdue.length > 0);
+
+            overdue.forEach(l => {
+                const u = users.find(x => x.name.toLowerCase() === l.user_name.toLowerCase());
+                let email = u && u.emel && u.emel.includes('@') ? u.emel : `${l.user_name.trim().toLowerCase().replace(/[^a-z0-9]/g,'.')}@moe.gov.my`;
+                const subj = encodeURIComponent("PERINGATAN: Pemulangan Peranti ICT");
+                const body = encodeURIComponent(`Salam ${l.user_name},\n\nPinjaman peranti ${l.device_tag} telah tamat pada ${l.end_date}.\nSila pulangkan segera.\n\nTerima kasih.`);
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-orange-50">
+                        <td class="p-2 font-medium">${l.user_name}</td>
+                        <td class="p-2 text-blue-600 text-xs">${email}</td>
+                        <td class="p-2">${l.device_tag}</td>
+                        <td class="p-2 text-red-600 font-bold">${l.end_date}</td>
+                        <td class="p-2 text-center"><a href="mailto:${email}?subject=${subj}&body=${body}" target="_blank" class="bg-orange-600 text-white px-3 py-1 rounded text-xs">Hantar</a></td>
+                    </tr>`;
+            });
+            modal.classList.remove('hidden'); lucide.createIcons();
         }
+
+        async function addUser() { 
+            const n = document.getElementById('newUserName').value; if(!n) return; 
+            await supabase.from('user_ba').insert([{name:n}]); alert("User Added"); loadLoanData(); 
+        }
+        async function addDevice() {
+            const t = document.getElementById('newTag').value, s = document.getElementById('newSerial').value; if(!t) return;
+            await supabase.from('device_inventory').insert([{tag:t, type:document.getElementById('newType').value, serial:s, status:'Tersedia'}]);
+            alert("Device Added"); loadLoanData();
+        }
+
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText=msg; t.classList.remove('opacity-0','translate-y-20'); setTimeout(()=>t.classList.add('opacity-0','translate-y-20'), 3000); }
+        function exportToExcel() { if(currentRecords.length) XLSX.writeFile(XLSX.utils.json_to_sheet(currentRecords), "Log.xlsx"); }
+        function exportToPDF() { if(currentRecords.length) { const doc = new window.jspdf.jsPDF('l'); doc.autoTable({head:[['Date','Name','Dept','Note']], body:currentRecords.map(r=>[r.created_at,r.nama,r.department,r.notes])}); doc.save("Log.pdf"); } }
+        function exportLoanHistoryToExcel() { if(currentLoanHistory.length) XLSX.writeFile(XLSX.utils.json_to_sheet(currentLoanHistory), "Loans.xlsx"); }
+        function exportLoanHistoryToPDF() { if(currentLoanHistory.length) { const doc = new window.jspdf.jsPDF(); doc.autoTable({head:[['Date','User','Device','Status']], body:currentLoanHistory.map(r=>[r.created_at,r.user_name,r.device_tag,r.status])}); doc.save("Loans.pdf"); } }
     </script>
 </body>
 </html>
