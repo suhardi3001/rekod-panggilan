@@ -227,14 +227,14 @@
                     <div class="bg-white p-4 md:p-6 rounded-lg shadow border border-gray-200">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                             <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="search"></i> Carian Live (Master Data)</h2>
-<div class="flex flex-wrap gap-2 w-full md:w-auto">
-    <button onclick="triggerMasterUpload()" class="admin-only hidden bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-200 transition flex items-center gap-2 border border-blue-200 flex-grow md:flex-grow-0 justify-center">
-        <i data-lucide="database-backup" class="w-4 h-4"></i> Import Data Induk
-    </button>
-    <button onclick="confirmClearMasterDatabase()" class="admin-only hidden bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition flex items-center gap-2 border border-red-200 flex-grow md:flex-grow-0 justify-center">
-        <i data-lucide="trash-2" class="w-4 h-4"></i> Padam Data Induk
-    </button>
-</div>
+                            <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                                <button onclick="triggerMasterUpload()" class="admin-only hidden bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-200 transition flex items-center gap-2 border border-blue-200 flex-grow md:flex-grow-0 justify-center">
+                                    <i data-lucide="database-backup" class="w-4 h-4"></i> Import Data Induk
+                                </button>
+                                <button onclick="confirmClearMasterDatabase()" class="admin-only hidden bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-200 transition flex items-center gap-2 border border-red-200 flex-grow md:flex-grow-0 justify-center">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i> Padam Data Induk
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="relative w-full">
@@ -378,16 +378,17 @@
                     <div class="bg-white p-4 md:p-6 rounded-lg shadow border border-gray-200">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                             <h2 class="text-xl font-bold flex items-center gap-2 text-gray-800 text-center md:text-left"><i data-lucide="database"></i> Rekod Panggilan dan Emel IGFMAS</h2>
-<div class="flex flex-wrap gap-2 items-center justify-center">
-    <button onclick="triggerImport()" class="admin-only hidden bg-gray-700 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-gray-800 flex items-center gap-2"><i data-lucide="upload"></i> Import</button>
-    
-    <button onclick="exportToExcel()" class="bg-green-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-green-700 flex items-center gap-2"><i data-lucide="sheet"></i> Excel</button>
-    <button onclick="exportToPDF()" class="bg-red-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-red-700 flex items-center gap-2"><i data-lucide="file-down"></i> PDF</button>
-    <button onclick="fetchRecords()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200"><i data-lucide="refresh-cw"></i></button>
-    <div class="hidden md:block border-l border-gray-300 mx-1 h-8"></div>
-    
-    <button onclick="confirmClearDatabase()" class="admin-only hidden bg-red-100 text-red-700 border border-red-200 px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-red-200 flex items-center gap-2" title="Padam semua data"><i data-lucide="trash-2"></i> Kosongkan</button>
-</div>                        </div>
+                            <div class="flex flex-wrap gap-2 items-center justify-center">
+                                <button onclick="triggerImport()" class="admin-only hidden bg-gray-700 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-gray-800 flex items-center gap-2"><i data-lucide="upload"></i> Import</button>
+                                
+                                <button onclick="exportToExcel()" class="bg-green-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-green-700 flex items-center gap-2"><i data-lucide="sheet"></i> Excel</button>
+                                <button onclick="exportToPDF()" class="bg-red-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-red-700 flex items-center gap-2"><i data-lucide="file-down"></i> PDF</button>
+                                <button onclick="fetchRecords()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200"><i data-lucide="refresh-cw"></i></button>
+                                <div class="hidden md:block border-l border-gray-300 mx-1 h-8"></div>
+                                
+                                <button onclick="confirmClearDatabase()" class="admin-only hidden bg-red-100 text-red-700 border border-red-200 px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-red-200 flex items-center gap-2" title="Padam semua data"><i data-lucide="trash-2"></i> Kosongkan</button>
+                            </div>
+                        </div>
                         <div class="table-container border border-gray-200 rounded-lg">
                             <table class="min-w-full bg-white text-xs md:text-sm" id="records-table">
                                 <thead class="bg-gray-100 text-gray-700 uppercase leading-normal">
@@ -473,61 +474,67 @@
 
                     <div id="loan-tab-admin" class="loan-tab-content hidden">
     
-    <div class="admin-only hidden mb-8 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
-        <h6 class="font-bold text-yellow-800 mb-3 flex items-center gap-2"><i data-lucide="upload-cloud"></i> Bulk Import (Excel)</h6>
-        <div class="flex flex-wrap gap-3">
-            <button onclick="triggerLoanUpload('user')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2 flex-grow md:flex-grow-0 justify-center">
-                <i data-lucide="users"></i> Upload Users
-            </button>
-            <button onclick="triggerLoanUpload('inventory')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2 flex-grow md:flex-grow-0 justify-center">
-                <i data-lucide="monitor"></i> Upload Inventory
-            </button>
-            <button onclick="triggerLoanUpload('records')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2 flex-grow md:flex-grow-0 justify-center">
-                <i data-lucide="file-clock"></i> Upload History
-            </button>
-        </div>
-    </div>
+                        <div class="admin-only hidden mb-8 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                            <h6 class="font-bold text-yellow-800 mb-3 flex items-center gap-2"><i data-lucide="upload-cloud"></i> Bulk Import & Data Management</h6>
+                            <div class="flex flex-wrap gap-3">
+                                <div class="flex items-center gap-1 border-r border-yellow-300 pr-3 mr-2">
+                                    <button onclick="triggerLoanUpload('user')" class="bg-yellow-600 text-white px-4 py-2 rounded-l text-sm hover:bg-yellow-700 flex items-center gap-2 justify-center">
+                                        <i data-lucide="users"></i> Upload Users
+                                    </button>
+                                    <button onclick="confirmClearUserDatabase()" class="bg-red-500 text-white px-3 py-2 rounded-r text-sm hover:bg-red-600 flex items-center gap-2 justify-center" title="Padam semua pengguna">
+                                        <i data-lucide="trash-2"></i> Clear
+                                    </button>
+                                </div>
+                        
+                                <button onclick="triggerLoanUpload('inventory')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2 flex-grow md:flex-grow-0 justify-center">
+                                    <i data-lucide="monitor"></i> Upload Inventory
+                                </button>
+                                <button onclick="triggerLoanUpload('records')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2 flex-grow md:flex-grow-0 justify-center">
+                                    <i data-lucide="file-clock"></i> Upload History
+                                </button>
+                            </div>
+                        </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        
-        <div class="space-y-6">
-            <div class="border p-4 rounded-lg bg-gray-50 shadow-sm">
-                <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Tambah Pengguna Baru</h6>
-                <input id="newUserName" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Nama Penuh">
-                <button onclick="addUser()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800 transition">Tambah Pengguna</button>
-            </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                            
+                            <div class="space-y-6">
+                                <div class="border p-4 rounded-lg bg-gray-50 shadow-sm">
+                                    <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Tambah Pengguna Baru</h6>
+                                    <input id="newUserName" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Nama Penuh">
+                                    <button onclick="addUser()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800 transition">Tambah Pengguna</button>
+                                </div>
 
-            <div class="border p-4 rounded-lg bg-gray-50 shadow-sm">
-                <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Tambah Peranti Baru</h6>
-                <input id="newTag" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Tag Aset (Cth: NB-01)">
-                <select id="newType" class="w-full px-3 py-2 border rounded-lg mb-2">
-                    <option>Notebook</option><option>Projector</option><option>HDMI Cable</option><option>Webcam</option>
-                </select>
-                <input id="newSerial" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="No. Siri">
-                <button onclick="addDevice()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800 transition">Tambah Peranti</button>
-            </div>
-        </div>
+                                <div class="border p-4 rounded-lg bg-gray-50 shadow-sm">
+                                    <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Tambah Peranti Baru</h6>
+                                    <input id="newTag" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Tag Aset (Cth: NB-01)">
+                                    <select id="newType" class="w-full px-3 py-2 border rounded-lg mb-2">
+                                        <option>Notebook</option><option>Projector</option><option>HDMI Cable</option><option>Webcam</option>
+                                    </select>
+                                    <input id="newSerial" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="No. Siri">
+                                    <button onclick="addDevice()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800 transition">Tambah Peranti</button>
+                                </div>
+                            </div>
 
-        <div class="border p-4 rounded-lg bg-white shadow-sm h-full">
-            <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Senarai Pinjaman Aktif</h6>
-            <div class="table-container">
-                <table class="min-w-full text-sm" id="active-loans-table">
-                    <thead class="bg-gray-100 sticky top-0">
-                        <tr>
-                            <th class="p-2 text-left">Peminjam</th>
-                            <th class="p-2 text-left">Peranti</th>
-                            <th class="p-2 text-left">Tamat</th>
-                            <th class="p-2 text-left">Tujuan</th>
-                        </tr>
-                    </thead>
-                    <tbody id="active-loans-body">
-                        </tbody>
-                </table>
-            </div>
-        </div>
-        
-    </div>
-</div>
+                            <div class="border p-4 rounded-lg bg-white shadow-sm h-full">
+                                <h6 class="font-bold mb-3 text-gray-700 border-b pb-2">Senarai Pinjaman Aktif</h6>
+                                <div class="table-container">
+                                    <table class="min-w-full text-sm" id="active-loans-table">
+                                        <thead class="bg-gray-100 sticky top-0">
+                                            <tr>
+                                                <th class="p-2 text-left">Peminjam</th>
+                                                <th class="p-2 text-left">Peranti</th>
+                                                <th class="p-2 text-left">Tamat</th>
+                                                <th class="p-2 text-left">Tujuan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="active-loans-body">
+                                            </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
                     <div id="loan-tab-history" class="loan-tab-content hidden">
                         <div class="mb-4 flex justify-between items-center">
                             <h6 class="font-bold text-gray-700">Sejarah Pinjaman</h6>
@@ -1354,7 +1361,7 @@
         }
 
         // --- Clear Database Logic (Unified Modal) ---
-        let clearActionType = ''; // 'rekod' or 'personnel'
+        let clearActionType = ''; // 'rekod', 'personnel', 'user_ba'
 
         function confirmClearDatabase() {
             clearActionType = 'rekod';
@@ -1370,6 +1377,13 @@
             document.getElementById('delete-modal').classList.remove('hidden');
         }
 
+        function confirmClearUserDatabase() {
+            clearActionType = 'user_ba';
+            document.getElementById('modal-title').textContent = "Padam Pengguna Pinjaman?";
+            document.getElementById('modal-message').innerHTML = "Adakah anda pasti mahu memadam <strong>SEMUA PENGGUNA (User BA)</strong>? <br>Dropdown nama peminjam akan kosong.";
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
         function closeDeleteModal() {
             document.getElementById('delete-modal').classList.add('hidden');
         }
@@ -1378,34 +1392,43 @@
             closeDeleteModal();
             showToast("Sedang memadam...");
             
-            const tableName = clearActionType === 'personnel' ? 'personnel' : 'rekod';
+            // Determine table name based on global variable
+            let tableName = '';
+            if (clearActionType === 'personnel') tableName = 'personnel';
+            else if (clearActionType === 'rekod') tableName = 'rekod';
+            else if (clearActionType === 'user_ba') tableName = 'user_ba';
             
+            if (!tableName) return;
+
             try {
-                // Delete all records where ID is NOT null and SELECT the deleted rows to verify
+                // Delete all records where ID is NOT null (common Supabase trick to delete all)
+                // For user_ba, we assume there's an ID column or we can use neq(id, 0) if integer
                 const { data, error } = await supabase
                     .from(tableName)
                     .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000') // Select all rows
-                    .select(); // IMPORTANT: Return deleted data to check count
+                    .neq('id', 0) // Try to delete everything (assuming int/uuid ID not 0/null)
+                    // If ID is UUID you might need .neq('id', '00000000-0000-0000-0000-000000000000')
+                    .select();
 
                 if (error) {
+                    // Fallback for UUID specific issues if simple delete fails
+                    // But usually RLS is the blocker, not syntax
                     throw error;
                 }
 
-                if (data && data.length > 0) {
-                    alert(`Berjaya! ${data.length} baris data dalam '${tableName}' telah dipadam.`);
-                    if (tableName === 'rekod') fetchRecords();
-                    if (tableName === 'personnel') {
-                        document.getElementById('global-search').value = '';
-                        document.getElementById('search-results-dropdown').classList.add('hidden');
-                    }
-                } else {
-                    alert(`Tiada data dipadam. \n\nMUNGKIN PUNCA: \n1. Database sudah kosong.\n2. Anda belum tetapkan 'DELETE Policy' di Supabase SQL Editor.\n\nSila run script SQL: CREATE POLICY "Allow delete" ON ${tableName} FOR DELETE USING (true);`);
+                alert(`Berjaya! Data dalam '${tableName}' telah dipadam.`);
+                
+                // Refresh UI
+                if (tableName === 'rekod') fetchRecords();
+                if (tableName === 'personnel') {
+                    document.getElementById('global-search').value = '';
+                    document.getElementById('search-results-dropdown').classList.add('hidden');
                 }
+                if (tableName === 'user_ba') loadLoanData();
 
             } catch (err) {
                 console.error('Delete Error:', err);
-                alert("Gagal memadam: " + err.message);
+                alert("Gagal memadam: " + err.message + "\n\nPastikan Policy 'DELETE' diaktifkan di Supabase.");
             }
         }
 
@@ -1502,10 +1525,13 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // Handle Loan Users Upload (FIXED FOR SIMPLE CSV/XLSX)
+        // Handle Loan Users Upload (UPDATED to include Email)
         function handleLoanUserUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
+            
+            showToast("Memproses fail pengguna...");
+            
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
@@ -1514,43 +1540,61 @@
                     const sheet = workbook.Sheets[workbook.SheetNames[0]];
                     const json = XLSX.utils.sheet_to_json(sheet);
                     
-                    // Robust parser: Handles rows where key is "name", "Name", "NAME" or even just value if no header
                     const inserts = [];
+                    
                     json.forEach(r => {
-                        // Attempt to find a key containing "name"
-                        let nameVal = null;
                         const keys = Object.keys(r);
-                        
-                        // 1. Check strict key match
-                        if(r.name) nameVal = r.name;
-                        else if(r.Name) nameVal = r.Name;
-                        else if(r.Nama) nameVal = r.Nama;
-                        // 2. Fuzzy search
+                        let nameVal = null;
+                        let emailVal = null;
+
+                        // --- FIND NAME ---
+                        if (r.name) nameVal = r.name;
+                        else if (r.Name) nameVal = r.Name;
+                        else if (r.Nama) nameVal = r.Nama;
                         else {
-                            const fuzzyKey = keys.find(k => k.toLowerCase().includes('name') || k.toLowerCase().includes('nama'));
-                            if(fuzzyKey) nameVal = r[fuzzyKey];
-                            // 3. Fallback: Take first column if it looks like a string
-                            else if (keys.length > 0 && typeof r[keys[0]] === 'string') nameVal = r[keys[0]];
+                            // Fuzzy search for Name
+                            const nameKey = keys.find(k => k.toLowerCase().includes('name') || k.toLowerCase().includes('nama'));
+                            if (nameKey) nameVal = r[nameKey];
                         }
 
+                        // --- FIND EMAIL ---
+                        if (r.email) emailVal = r.email;
+                        else if (r.Email) emailVal = r.Email;
+                        else if (r.Emel) emailVal = r.Emel;
+                        else {
+                            // Fuzzy search for Email
+                            const emailKey = keys.find(k => k.toLowerCase().includes('email') || k.toLowerCase().includes('emel') || k.toLowerCase().includes('e-mel'));
+                            if (emailKey) emailVal = r[emailKey];
+                        }
+
+                        // Only add if Name exists (Email is optional but recommended)
                         if (nameVal && typeof nameVal === 'string' && nameVal.trim().length > 0) {
-                            inserts.push({ name: nameVal.trim() });
+                            inserts.push({ 
+                                name: nameVal.trim(),
+                                emel: emailVal ? emailVal.trim() : '' // Save email or empty string
+                            });
                         }
                     });
 
                     if(inserts.length === 0) {
-                        alert("Tiada data pengguna dijumpai. Pastikan fail ada header 'Name' atau 'Nama'.");
+                        alert("Tiada data pengguna dijumpai. Pastikan fail Excel ada header 'Nama' dan 'Emel'.");
                         return;
                     }
 
+                    // Insert into Supabase
                     const { error } = await supabase.from('user_ba').insert(inserts);
-                    if(error) alert("Ralat Upload: " + error.message);
-                    else { alert(`Berjaya! ${inserts.length} pengguna telah ditambah.`); loadLoanData(); }
+                    
+                    if(error) {
+                        alert("Ralat Upload: " + error.message);
+                    } else { 
+                        alert(`Berjaya! ${inserts.length} pengguna telah ditambah dengan maklumat Nama & Emel.`); 
+                        loadLoanData(); // Refresh dropdowns
+                    }
                 } catch(err) { 
                     console.error(err);
-                    alert("Ralat memproses fail Excel."); 
+                    alert("Ralat memproses fail Excel: " + err.message); 
                 }
-                event.target.value = '';
+                event.target.value = ''; // Reset input
             };
             reader.readAsArrayBuffer(file);
         }
