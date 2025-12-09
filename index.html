@@ -416,7 +416,17 @@
             }
         }
 
-        async function handleLogout() { await supabase.auth.signOut(); window.location.reload(); }
+        async function handleLogout() { 
+            try {
+                if(supabase) await supabase.auth.signOut(); 
+            } catch(e) {
+                console.error("Logout API Error:", e);
+            } finally {
+                // Force reload regardless of API success/failure
+                window.location.reload(); 
+            }
+        }
+
         async function toggleSignUp() {
             const e = document.getElementById('email').value, p = document.getElementById('password').value;
             if(!e || !p) return alert("Isi email & password.");
