@@ -281,13 +281,13 @@
                         <div class="mb-8 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
                             <h6 class="font-bold text-yellow-800 mb-3 flex items-center gap-2"><i data-lucide="upload-cloud"></i> Bulk Import & Data Management</h6>
                             <div class="flex flex-wrap gap-3">
-                                <div class="flex items-center gap-1 border-r border-yellow-300 pr-3 mr-2">
+                                <div class="admin-only hidden flex items-center gap-1 border-r border-yellow-300 pr-3 mr-2">
                                     <button onclick="triggerLoanUpload('user')" class="bg-yellow-600 text-white px-4 py-2 rounded-l text-sm hover:bg-yellow-700 flex items-center gap-2"><i data-lucide="users"></i> Upload Users</button>
                                     <button onclick="confirmClearUserDatabase()" class="bg-red-500 text-white px-3 py-2 rounded-r text-sm hover:bg-red-600 flex items-center gap-2" title="Padam semua"><i data-lucide="trash-2"></i> Clear</button>
                                 </div>
                                 <button onclick="checkOverdueLoans()" class="bg-orange-600 text-white px-4 py-2 rounded text-sm hover:bg-orange-700 flex items-center gap-2"><i data-lucide="bell-ring"></i> Semak Lewat & Hantar Emel</button>
-                                <button onclick="triggerLoanUpload('inventory')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2"><i data-lucide="monitor"></i> Upload Inventory</button>
-                                <button onclick="triggerLoanUpload('records')" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2"><i data-lucide="file-clock"></i> Upload History</button>
+                                <button onclick="triggerLoanUpload('inventory')" class="admin-only hidden bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2"><i data-lucide="monitor"></i> Upload Inventory</button>
+                                <button onclick="triggerLoanUpload('records')" class="admin-only hidden bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700 flex items-center gap-2"><i data-lucide="file-clock"></i> Upload History</button>
                             </div>
                         </div>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -434,7 +434,21 @@
         function showApp() { 
             document.getElementById('login-page').classList.add('hidden-section'); document.getElementById('app-layout').classList.remove('hidden-section'); 
             document.getElementById('user-display').innerText = currentUser.email; 
-            switchMainTab('call-log'); 
+            switchMainTab('call-log');
+            checkAdminAccess(); // Trigger admin check on load
+        }
+
+        function checkAdminAccess() {
+            const allowedAdmin = 'suhardi.alias@moe.gov.my';
+            const isAdmin = currentUser && currentUser.email === allowedAdmin;
+
+            document.querySelectorAll('.admin-only').forEach(el => {
+                if (isAdmin) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
         }
 
         // --- NAV & TABS ---
