@@ -602,7 +602,18 @@
                     perekod: currentUser.email
                 };
                 
-                const { error } = await supabase.from('rekod').insert([row]);
+                let { error } = await supabase.from('rekod').insert([row]);
+
+                // FAIL-SAFE FOR MISSING 'perekod' COLUMN
+                if (error && error.message && error.message.toLowerCase().includes("column") && error.message.includes("perekod")) {
+                    alert("AMARAN: Kolum 'perekod' tidak wujud dalam database 'rekod'. Sistem akan cuba simpan tanpa maklumat ini. Sila tambah kolum 'perekod' (text) di Supabase untuk mengelakkan ralat ini pada masa hadapan.");
+                    
+                    const safeRow = { ...row };
+                    delete safeRow.perekod;
+                    const retry = await supabase.from('rekod').insert([safeRow]);
+                    error = retry.error;
+                }
+
                 if(error) throw error;
                 
                 showToast("Disimpan!"); 
@@ -1000,3 +1011,4 @@
     </script>
 </body>
 </html>
+</script>
