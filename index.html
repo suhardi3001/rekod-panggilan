@@ -377,6 +377,7 @@
         }
 
         let currentRecords = [], currentLoanHistory = [], clearActionType = '';
+        let cachedUserMap = {}; // Global cache for user mapping
 
         document.addEventListener('DOMContentLoaded', () => {
             if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -662,35 +663,77 @@
 
         // --- FETCH RECORDS & UPDATE STATUS ---
         async function fetchRecords() {
-            const tb = document.getElementById('table-body'); tb.innerHTML = '<tr><td colspan="9" class="text-center"><div class="loader"></div></td></tr>';
-            const { data } = await supabase.from('rekod').select('*').order('created_at', { ascending: false });
-            tb.innerHTML = ''; currentRecords = data || [];
-            if(!data || !data.length) { tb.innerHTML = '<tr><td colspan="9" class="text-center">Tiada rekod.</td></tr>'; return; }
-            data.forEach(r => {
-                // Determine dropdown color class
-                const statusClass = r.confirmation === 'YA' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-                
-                // Format Updated Date (Safe check for null)
-                const updatedDate = r.status_updated_at ? new Date(r.status_updated_at).toLocaleString('ms-MY') : '-';
-                
-                tb.innerHTML += `
-                    <tr class="border-b">
-                        <td class="p-3">${new Date(r.created_at).toLocaleString()}</td>
-                        <td class="p-3">${r.ic_number}</td>
-                        <td class="p-3">${r.nama}</td>
-                        <td class="p-3">${r.department}</td>
-                        <td class="p-3 text-sm text-gray-500">${r.notes}</td>
-                        <td class="p-3 text-xs">${r.perekod||'-'}</td>
-                        <td class="p-3">
-                            <select onchange="updateRecordStatus('${r.id}', this.value)" class="border rounded p-1 text-xs font-bold cursor-pointer outline-none ${statusClass}">
-                                <option value="YA" ${r.confirmation === 'YA' ? 'selected' : ''}>YA</option>
-                                <option value="TIDAK" ${r.confirmation === 'TIDAK' ? 'selected' : ''}>TIDAK</option>
-                            </select>
-                        </td>
-                        <td class="p-3 text-xs">${updatedDate}</td>
-                        <td class="p-3 text-xs text-gray-500">${r.status_updated_by || '-'}</td>
-                    </tr>`;
-            });
+            const tb = document.getElementById('table-body');
+            tb.innerHTML = '<tr><td colspan="9" class="text-center"><div class="loader"></div></td></tr>';
+
+            try {
+                // Fetch both records and user directory (Parallel for speed)
+                const [ { data: records, error: err1 }, { data: users, error: err2 } ] = await Promise.all([
+                    supabase.from('rekod').select('*').order('created_at', { ascending: false }),
+                    supabase.from('user_ba').select('name, emel')
+                ]);
+
+                if(err1) throw err1;
+
+                // Build User Map for Quick Lookup
+                cachedUserMap = {};
+                if(users) {
+                    users.forEach(u => {
+                        if(u.emel) cachedUserMap[u.emel.toLowerCase()] = u.name;
+                    });
+                }
+
+                currentRecords = records || [];
+                tb.innerHTML = '';
+
+                if(!records || !records.length) {
+                    tb.innerHTML = '<tr><td colspan="9" class="text-center">Tiada rekod.</td></tr>';
+                    return;
+                }
+
+                // Helper to resolve name from email/uuid
+                const resolveName = (val) => {
+                    if(!val) return '-';
+                    // 1. Check map
+                    if(cachedUserMap[val.toLowerCase()]) return cachedUserMap[val.toLowerCase()];
+                    // 2. Fallback: Format email if it looks like one
+                    if(val.includes('@')) {
+                        // "ali.abu@moe.gov.my" -> "Ali Abu"
+                        return val.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    }
+                    // 3. Last resort: Return raw value (e.g. UUID)
+                    return val;
+                };
+
+                records.forEach(r => {
+                    const statusClass = r.confirmation === 'YA' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                    const updatedDate = r.status_updated_at ? new Date(r.status_updated_at).toLocaleString('ms-MY') : '-';
+                    
+                    const recName = resolveName(r.perekod);
+                    const updName = resolveName(r.status_updated_by);
+
+                    tb.innerHTML += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-3">${new Date(r.created_at).toLocaleString()}</td>
+                            <td class="p-3 font-medium">${r.ic_number}</td>
+                            <td class="p-3">${r.nama}</td>
+                            <td class="p-3">${r.department}</td>
+                            <td class="p-3 text-sm text-gray-500">${r.notes}</td>
+                            <td class="p-3 text-xs font-semibold text-blue-700">${recName}</td>
+                            <td class="p-3">
+                                <select onchange="updateRecordStatus('${r.id}', this.value)" class="border rounded p-1 text-xs font-bold cursor-pointer outline-none ${statusClass}">
+                                    <option value="YA" ${r.confirmation === 'YA' ? 'selected' : ''}>YA</option>
+                                    <option value="TIDAK" ${r.confirmation === 'TIDAK' ? 'selected' : ''}>TIDAK</option>
+                                </select>
+                            </td>
+                            <td class="p-3 text-xs">${updatedDate}</td>
+                            <td class="p-3 text-xs text-gray-500">${updName}</td>
+                        </tr>`;
+                });
+            } catch(e) {
+                console.error(e);
+                tb.innerHTML = `<tr><td colspan="9" class="text-center text-red-500">Ralat Memuatkan Data: ${e.message}</td></tr>`;
+            }
         }
 
         async function updateRecordStatus(id, newValue) {
@@ -962,16 +1005,25 @@
                 alert("Tiada rekod untuk diexport. Sila muat semula data.");
                 return;
             }
+
+            // Helper to reuse resolution logic
+            const resolveName = (val) => {
+                if(!val) return '-';
+                if(cachedUserMap[val.toLowerCase()]) return cachedUserMap[val.toLowerCase()];
+                if(val.includes('@')) return val.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                return val;
+            };
+
             const dataToExport = currentRecords.map(r => ({
                 "Tarikh & Masa": new Date(r.created_at).toLocaleString('ms-MY'),
                 "No. K/P": r.ic_number,
                 "Nama Pegawai": r.nama,
                 "Jabatan": r.department,
                 "Butiran Masalah": r.notes,
-                "Direkod Oleh": r.perekod || '-',
+                "Direkod Oleh": resolveName(r.perekod),
                 "Pengesahan": r.confirmation || 'TIDAK',
                 "Tarikh Kemaskini": r.status_updated_at ? new Date(r.status_updated_at).toLocaleString('ms-MY') : '-',
-                "Dikemaskini Oleh": r.status_updated_by || '-'
+                "Dikemaskini Oleh": resolveName(r.status_updated_by)
             }));
             const ws = XLSX.utils.json_to_sheet(dataToExport);
             const wb = XLSX.utils.book_new();
@@ -985,6 +1037,14 @@
                 alert("Tiada rekod untuk diexport. Sila muat semula data.");
                 return;
             }
+
+            const resolveName = (val) => {
+                if(!val) return '-';
+                if(cachedUserMap[val.toLowerCase()]) return cachedUserMap[val.toLowerCase()];
+                if(val.includes('@')) return val.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                return val;
+            };
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4'); 
             doc.setFontSize(14); doc.text("Laporan Rekod Aduan & Panggilan ICT", 14, 15);
@@ -998,10 +1058,10 @@
                 r.nama, 
                 r.department, 
                 r.notes, 
-                r.perekod || '-', 
+                resolveName(r.perekod), 
                 r.confirmation || 'TIDAK',
                 r.status_updated_at ? new Date(r.status_updated_at).toLocaleDateString('ms-MY') : '-',
-                r.status_updated_by || '-'
+                resolveName(r.status_updated_by)
             ]);
 
             doc.autoTable({ 
@@ -1040,3 +1100,5 @@
             XLSX.writeFile(wb, `Sejarah_Pinjaman_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
     </script>
+</body>
+</html>
