@@ -196,7 +196,7 @@
                             <div class="flex flex-col md:flex-row gap-2">
                                 <div class="relative flex-grow w-full">
                                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i data-lucide="search" class="w-5 h-5"></i></span>
-                                    <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cari Nama, IC, Telefon, Emel..." autocomplete="off">
+                                    <input type="text" id="global-search" class="w-full pl-10 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cari Nama, IC, Kod PTJ, Jabatan..." autocomplete="off">
                                 </div>
                                 <button onclick="handleLiveSearch(document.getElementById('global-search').value)" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 w-full md:w-auto">Cari</button>
                             </div>
@@ -583,12 +583,25 @@
             if(!q || q.length < 2) { dd.classList.add('hidden'); return; }
             searchTimeout = setTimeout(async () => {
                 dd.classList.remove('hidden'); dd.innerHTML = '<div class="p-3 text-center">Searching...</div>';
-                const { data } = await supabase.from('personnel').select('*').or(`nama.ilike.%${q}%,ic_number.ilike.%${q}%`).limit(5);
+                
+                // UPDATED QUERY: Now searches nama, ic_number, kod_ptj, and department
+                const { data } = await supabase.from('personnel').select('*')
+                    .or(`nama.ilike.%${q}%,ic_number.ilike.%${q}%,kod_ptj.ilike.%${q}%,department.ilike.%${q}%`)
+                    .limit(5);
+
                 if(!data || !data.length) { dd.innerHTML = `<div class="p-3 text-center text-gray-500">Tiada rekod.</div>`; return; }
                 dd.innerHTML = '';
                 data.forEach(p => {
                     const d = document.createElement('div'); d.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b';
-                    d.innerHTML = `<div class="font-bold">${p.nama}</div><div class="text-xs text-gray-500">${p.ic_number}</div>`;
+                    // Enhanced display to show Dept/PTJ in dropdown so user knows what they found
+                    d.innerHTML = `
+                        <div class="font-bold text-sm">${p.nama}</div>
+                        <div class="flex justify-between items-center mt-1">
+                            <div class="text-xs text-gray-500">${p.ic_number}</div>
+                            <div class="text-xs text-blue-600 font-semibold">${p.kod_ptj || ''}</div>
+                        </div>
+                        <div class="text-xs text-gray-400 truncate">${p.department || ''}</div>
+                    `;
                     d.onclick = () => {
                         ['ic','nama','telefon','emel','gred','kod_ptj','department'].forEach(k => document.getElementById(k).value = p[k==='ic'?'ic_number':k]||'');
                         dd.classList.add('hidden'); checkFormValidity();
@@ -871,6 +884,13 @@
                 
                 if(!u || !d || !s || !e) return alert("Sila isi semua.");
                 
+                // --- NEW LOGIC START ---
+                // Validate that Start Date is not after End Date
+                if (new Date(s) > new Date(e)) {
+                    return alert("Ralat: Tarikh Mula tidak boleh selepas Tarikh Tamat.");
+                }
+                // --- NEW LOGIC END ---
+
                 // Get Issuer (Ensure we have a valid user)
                 if (!currentUser) {
                     await checkAuth(); // Try to refresh auth if missing
