@@ -604,31 +604,41 @@
                 
                 let { error } = await supabase.from('rekod').insert([row]);
 
-                // FAIL-SAFE FOR MISSING COLUMNS (submitted_by / perekod)
-                if (error && error.message && error.message.toLowerCase().includes("column")) {
+                // FAIL-SAFE FOR MISSING COLUMNS OR WRONG TYPE (submitted_by / perekod)
+                if (error && error.message) {
+                    const msg = error.message.toLowerCase();
                     let safeRow = { ...row };
                     let retryNeeded = false;
 
-                    if (error.message.includes("submitted_by")) {
-                        alert("AMARAN: Kolum 'submitted_by' tiada. Menyimpan data tanpa ID pengguna.");
+                    // CASE 1: Missing columns
+                    if (msg.includes("column") && msg.includes("submitted_by")) {
                         delete safeRow.submitted_by;
                         retryNeeded = true;
                     }
-                    
-                    if (error.message.includes("perekod")) {
-                        alert("AMARAN: Kolum 'perekod' tiada. Menyimpan data tanpa emel pengguna.");
+                    if (msg.includes("column") && msg.includes("perekod")) {
                         delete safeRow.perekod;
                         retryNeeded = true;
+                    }
+
+                    // CASE 2: Invalid UUID syntax (e.g. email passed to UUID column)
+                    if (msg.includes("invalid input syntax for type uuid")) {
+                        // If the error message mentions the email, then 'perekod' (which holds email) is likely set to UUID type
+                        if (msg.includes(currentUser.email)) {
+                            alert("SISTEM REPAIR: Kolum 'perekod' salah jenis (UUID). Menukar kepada ID pengguna untuk simpanan sementara.");
+                            safeRow.perekod = currentUser.id; // Send valid UUID instead of email
+                            retryNeeded = true;
+                        }
                     }
 
                     if (retryNeeded) {
                         const retry = await supabase.from('rekod').insert([safeRow]);
                         error = retry.error;
                         
-                        // Double-check: If we fixed one but the other is ALSO missing (database usually returns first error it finds)
-                        if (error && error.message.toLowerCase().includes("column")) {
-                             if (error.message.includes("perekod")) delete safeRow.perekod;
-                             if (error.message.includes("submitted_by")) delete safeRow.submitted_by;
+                        // Double-check loop if multiple issues exist
+                        if (error && error.message) {
+                             const msg2 = error.message.toLowerCase();
+                             if (msg2.includes("column") && msg2.includes("perekod")) delete safeRow.perekod;
+                             if (msg2.includes("column") && msg2.includes("submitted_by")) delete safeRow.submitted_by;
                              const finalRetry = await supabase.from('rekod').insert([safeRow]);
                              error = finalRetry.error;
                         }
@@ -1030,5 +1040,3 @@
             XLSX.writeFile(wb, `Sejarah_Pinjaman_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
     </script>
-</body>
-</html>
