@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod Log & Pinjaman (Final v2)</title>
+    <title>Sistem Rekod Log & Pinjaman (Final v3)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -219,45 +219,135 @@
                             <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="file-text"></i> Borang Maklumat</h2>
                             <span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full self-start md:self-auto" id="current-date"></span>
                         </div>
+                        
                         <form id="data-form" class="space-y-4">
                             <input type="hidden" id="is-new-user" value="false">
                             
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="relative group"><label class="block text-sm font-medium text-gray-700 mb-1">IC</label><div class="relative"><input type="text" id="ic" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="enableEdit('ic')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                <div class="relative"><label class="block text-sm font-medium text-gray-700 mb-1">Nama</label><div class="relative"><input type="text" id="nama" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="enableEdit('nama')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                <div class="relative"><label class="block text-sm font-medium text-gray-700 mb-1">Telefon</label><div class="relative"><input type="text" id="telefon" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="enableEdit('telefon')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                <div class="relative"><label class="block text-sm font-medium text-gray-700 mb-1">Emel</label><div class="relative"><input type="email" id="emel" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="enableEdit('emel')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                <div class="relative"><label class="block text-sm font-medium text-gray-700 mb-1">Gred</label><div class="relative"><input type="text" id="gred" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="enableEdit('gred')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                <div class="relative"><label class="block text-sm font-medium text-gray-700 mb-1">Kod PTJ</label><div class="relative"><input type="text" id="kod_ptj" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="enableEdit('kod_ptj')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                <div class="relative md:col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">Jabatan</label><div class="relative"><input type="text" id="department" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="enableEdit('department')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                            </div>
-                            
-                            <div class="flex items-center space-x-2 mt-2">
-                                <input type="checkbox" id="save-to-master" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                <label for="save-to-master" class="text-sm text-gray-600">Simpan perubahan profil ke Data Induk (Master Data)</label>
-                            </div>
+                            <!-- Two Column Grid for Input and Radios -->
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                
+                                <!-- LEFT COLUMN: User Details -->
+                                <div class="space-y-4">
+                                    <h3 class="font-bold text-gray-700 border-b pb-2">Maklumat Pengguna</h3>
+                                    <!-- 1. Nama -->
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">1. Nama</label>
+                                        <div class="relative">
+                                            <input type="text" id="nama" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly>
+                                            <button type="button" onclick="enableEdit('nama')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                    <!-- 2. IC -->
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">2. IC</label>
+                                        <div class="relative">
+                                            <input type="text" id="ic" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly>
+                                            <button type="button" onclick="enableEdit('ic')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                    <!-- 3. Kod PTJ -->
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">3. Kod PTJ</label>
+                                        <div class="relative">
+                                            <input type="text" id="kod_ptj" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly>
+                                            <button type="button" onclick="enableEdit('kod_ptj')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                    <!-- 4. Jabatan -->
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">4. Jabatan</label>
+                                        <div class="relative">
+                                            <input type="text" id="department" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly>
+                                            <button type="button" onclick="enableEdit('department')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                    <!-- 5. Emel -->
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">5. Emel</label>
+                                        <div class="relative">
+                                            <input type="email" id="emel" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly>
+                                            <button type="button" onclick="enableEdit('emel')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                    <!-- 6. No Telefon -->
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">6. No Telefon</label>
+                                        <div class="relative">
+                                            <input type="text" id="telefon" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly>
+                                            <button type="button" onclick="enableEdit('telefon')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                    <!-- 7. Gred -->
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">7. Gred</label>
+                                        <div class="relative">
+                                            <input type="text" id="gred" class="w-full px-3 py-2 border rounded-lg bg-gray-50 read-only:text-gray-500" readonly>
+                                            <button type="button" onclick="enableEdit('gred')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
 
-                            <div class="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                                <label class="block text-sm font-bold text-gray-800 mb-3">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="system-radio-group">
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="ecp450" class="form-radio text-blue-600"><span class="text-xs font-medium">ECP450 / Portal</span></label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="ecp400" class="form-radio text-blue-600"><span class="text-xs font-medium">ECP400</span></label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="hcp400" class="form-radio text-blue-600"><span class="text-xs font-medium">HCP400</span></label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="psa400" class="form-radio text-blue-600"><span class="text-xs font-medium">PSA400 / SOLMAN</span></label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="bp1" class="form-radio text-blue-600"><span class="text-xs font-medium">BP1</span></label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="bwp" class="form-radio text-blue-600"><span class="text-xs font-medium">BWP</span></label>
-                                    <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50"><input type="radio" name="system_type" value="mycost" class="form-radio text-blue-600"><span class="text-xs font-medium">MyCost</span></label>
+                                    <div class="flex items-center space-x-2 mt-4 pt-4 border-t">
+                                        <input type="checkbox" id="save-to-master" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                        <label for="save-to-master" class="text-xs text-gray-600">Simpan perubahan profil ke Data Induk (Master Data)</label>
+                                    </div>
                                 </div>
-                                <div id="issue-dropdown-container" class="hidden animate-fade-in">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Isu <span class="text-red-500">*</span></label>
-                                    <select id="issue-dropdown" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none"><option value="" disabled selected>Sila Pilih Isu</option></select>
+
+                                <!-- RIGHT COLUMN: Radio Buttons & Issues -->
+                                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 h-fit">
+                                    <label class="block text-sm font-bold text-gray-800 mb-3 border-b pb-2">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
+                                    
+                                    <div class="flex flex-col space-y-2 mb-4" id="system-radio-group">
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="portal" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">1. Portal</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="ecp450" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">2. ECP450</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="ecp400" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">3. ECP400</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="hcp400" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">4. HCP400</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="solman" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">5. SOLMAN</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="psa400" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">6. PSA400</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="bp1" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">7. BP1</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="bwp" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">8. BWP</span>
+                                        </label>
+                                        <!-- Keep MyCost as extra but hidden from numbering if not needed, or keep for legacy -->
+                                        <label class="flex items-center space-x-2 cursor-pointer bg-white p-2 rounded border hover:bg-blue-50 transition">
+                                            <input type="radio" name="system_type" value="mycost" class="form-radio text-blue-600">
+                                            <span class="text-sm font-medium">MyCost</span>
+                                        </label>
+                                    </div>
+
+                                    <div id="issue-dropdown-container" class="hidden animate-fade-in mt-4 border-t pt-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Isu <span class="text-red-500">*</span></label>
+                                        <select id="issue-dropdown" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none"><option value="" disabled selected>Sila Pilih Isu</option></select>
+                                    </div>
+                                    <div id="other-issue-container" class="mt-3 hidden animate-fade-in">
+                                        <input type="text" id="other-issue-input" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sila nyatakan masalah lain secara spesifik...">
+                                    </div>
+                                    
+                                    <div class="mt-6 pt-4 border-t border-gray-200">
+                                        <button type="submit" id="submit-btn" disabled class="w-full bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 shadow-md transition transform hover:scale-105 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"><i data-lucide="save"></i> Hantar & Simpan</button>
+                                    </div>
                                 </div>
-                                <div id="other-issue-container" class="mt-3 hidden animate-fade-in">
-                                    <input type="text" id="other-issue-input" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Sila nyatakan masalah lain secara spesifik...">
-                                </div>
-                            </div>
-                            <div class="pt-4 border-t border-gray-100 flex justify-end">
-                                <button type="submit" id="submit-btn" disabled class="w-full md:w-auto bg-green-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-green-700 shadow-md transition transform hover:scale-105 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"><i data-lucide="save"></i> Hantar & Simpan</button>
                             </div>
                         </form>
                     </div>
@@ -365,6 +455,7 @@
                                         <th class="p-3 text-left w-24">Tarikh Mohon</th>
                                         <th class="p-3 text-left w-32">Peminjam</th>
                                         <th class="p-3 text-left w-24">Peranti</th>
+                                        <th class="p-3 text-left w-32">No. Siri</th> <!-- NEW COLUMN -->
                                         <th class="p-3 text-left w-32">Tempoh</th>
                                         <th class="p-3 text-left w-24">Dikeluarkan Oleh</th>
                                         <th class="p-3 text-left w-24">Pulang</th>
@@ -661,15 +752,25 @@
 
         function updateDropdown(t) {
             const dd = document.getElementById('issue-dropdown'); dd.innerHTML = '<option value="" disabled selected>Pilih Isu</option>';
+            
+            // Re-using lists for new specific items
+            const ecp450_list = ["Sah grey out", "Ralat HKP", "Ralat No telefon", "Ralat Gred", "Tiada dokumen", "Salah URL", "ID lock", "Emel salah", "Lain-lain"];
+            const ecp400_list = ["Masalah role", "Push dokumen", "ID lock", "Lain-lain"];
+            const psa400_list = ["Masalah role", "ID lock", "Lain-lain"];
+            const generic_list = ["Masalah role", "ID lock", "Lain-lain"];
+
             const opts = {
-                "ecp450": ["Sah grey out", "Ralat HKP", "Ralat No telefon", "Ralat Gred", "Tiada dokumen", "Salah URL", "ID lock", "Emel salah", "Lain-lain"],
-                "ecp400": ["Masalah role", "Push dokumen", "ID lock", "Lain-lain"],
-                "hcp400": ["Masalah role", "ID lock", "Lain-lain"],
-                "psa400": ["Masalah role", "ID lock", "Lain-lain"],
-                "bp1": ["Masalah role", "ID lock", "Lain-lain"],
-                "bwp": ["Masalah role", "ID lock", "Lain-lain"],
-                "mycost": ["Masalah role", "ID lock", "Lain-lain"]
+                "portal": ecp450_list, // Map Portal to ECP450 issues
+                "ecp450": ecp450_list,
+                "ecp400": ecp400_list,
+                "hcp400": generic_list,
+                "solman": psa400_list, // Map Solman to PSA400 issues
+                "psa400": psa400_list,
+                "bp1": generic_list,
+                "bwp": generic_list,
+                "mycost": generic_list
             };
+
             if(opts[t]) opts[t].forEach(i => { const o = document.createElement('option'); o.value=i; o.text=i; dd.appendChild(o); });
             document.getElementById('issue-dropdown-container').classList.remove('hidden');
         }
@@ -684,7 +785,7 @@
                 const sys = sysRadio.value;
                 const iss = document.getElementById('issue-dropdown').value;
                 const oth = document.getElementById('other-issue-input').value;
-                const note = `${sys} - ${iss}${iss==='Lain-lain' ? ' ('+oth+')' : ''}`;
+                const note = `${sys.toUpperCase()} - ${iss}${iss==='Lain-lain' ? ' ('+oth+')' : ''}`;
                 
                 const icVal = document.getElementById('ic').value;
                 const nameVal = document.getElementById('nama').value;
@@ -865,12 +966,22 @@
         }
 
         async function loadLoanHistory() {
-            const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="8" class="text-center"><div class="loader"></div></td></tr>';
-            const [ { data: loans }, { data: users } ] = await Promise.all([
+            const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="9" class="text-center"><div class="loader"></div></td></tr>';
+            
+            // UPDATED: Fetch Devices to get Serial Number
+            const [ { data: loans }, { data: users }, { data: devices } ] = await Promise.all([
                 supabase.from('rekod_pinjaman').select('*').order('created_at',{ascending:false}),
-                supabase.from('user_ba').select('name, emel')
+                supabase.from('user_ba').select('name, emel'),
+                supabase.from('device_inventory').select('tag, serial') // Fetch Serials
             ]);
+
+            // Map users
             if(users) users.forEach(u => { if(u.emel) cachedUserMap[u.emel.toLowerCase()] = u.name; });
+            
+            // Map devices for serial lookup
+            const deviceMap = {};
+            if(devices) devices.forEach(d => { deviceMap[d.tag] = d.serial; });
+
             currentLoanHistory = loans || [];
             tb.innerHTML = '';
             const today = new Date(); today.setHours(0,0,0,0);
@@ -879,10 +990,15 @@
                 const endDate = new Date(l.end_date);
                 const isOverdue = l.status === 'Active' && endDate < today;
                 const overdueClass = isOverdue ? 'bg-red-100 text-red-900 font-bold' : 'hover:bg-gray-50';
+                
+                // Lookup Serial
+                const serialNo = deviceMap[l.device_tag] || '-';
+
                 tb.innerHTML += `<tr class="border-b ${overdueClass}">
                     <td class="p-3 align-top">${new Date(l.created_at).toLocaleDateString()}</td>
                     <td class="p-3 align-top font-medium">${l.user_name}</td>
                     <td class="p-3 align-top text-blue-600">${l.device_tag}</td>
+                    <td class="p-3 align-top text-gray-700 font-mono text-xs">${serialNo}</td> <!-- SERIAL COLUMN -->
                     <td class="p-3 align-top text-xs">${l.start_date} - ${l.end_date}</td>
                     <td class="p-3 align-top text-xs text-blue-700 font-semibold">${resolveName(l.issued_by)}</td>
                     <td class="p-3 align-top">${l.return_date?new Date(l.return_date).toLocaleDateString():'-'}</td>
