@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod IT (Refactored v5)</title>
+    <title>Sistem Rekod IT (Final v6)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,27 +13,26 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* --- GLOBAL STYLES --- */
+        /* --- GLOBAL & UTILITY STYLES --- */
         :root { --base-font-size: 16px; }
         html { font-size: var(--base-font-size); }
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         
-        /* Utility Classes */
         .hidden-section { display: none !important; }
         .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Loader Animation */
+        /* Loader */
         .loader {
             border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%;
             width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Custom Scrollbar for Tables */
+        /* Table Scroll */
         .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         
-        /* Netflix-style Login Button Animation */
+        /* Netflix-style Button */
         .login-btn-anim { position: relative; transition: all 0.4s; overflow: hidden; }
         .login-btn-anim.loading { background-color: #000; color: transparent; pointer-events: none; }
         .login-btn-anim.loading::after {
@@ -42,7 +41,7 @@
         }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
         
-        /* Tab States */
+        /* Tabs */
         .tab-active-main { background-color: #1e3a8a !important; color: white; }
         .tab-inactive-main { background-color: transparent; color: white; }
         .tab-active-sub { color: #2563eb !important; border-bottom: 2px solid #2563eb !important; }
@@ -92,7 +91,7 @@
                     </div>
                 </div>
                 <div class="flex items-center text-sm">
-                    <span id="user-display" class="mr-4 text-blue-200"></span>
+                    <span id="user-display" class="mr-4 text-blue-200 truncate max-w-[150px]"></span>
                     <button onclick="Auth.logout()" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">Keluar</button>
                 </div>
             </div>
@@ -100,8 +99,6 @@
 
         <main class="flex-grow p-4 md:p-6 w-full mx-auto max-w-7xl"> 
             
-            <input type="file" id="import-excel" accept=".xlsx" class="hidden">
-
             <div id="call-log-section" class="w-full">
                 <div class="flex border-b mb-6">
                     <button onclick="Navigation.switchCallLogTab('search')" id="btn-sub-search" class="px-6 py-2 font-medium tab-active-sub">Input</button>
@@ -208,6 +205,7 @@
                                             <label class="radio-label flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-blue-50"><input type="radio" name="system_type" value="psa400" class="text-blue-600"> 6. PSA400</label>
                                             <label class="radio-label flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-blue-50"><input type="radio" name="system_type" value="bp1" class="text-blue-600"> 7. BP1</label>
                                             <label class="radio-label flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-blue-50"><input type="radio" name="system_type" value="bwp" class="text-blue-600"> 8. BWP</label>
+                                            <label class="radio-label flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-blue-50"><input type="radio" name="system_type" value="mycost" class="text-blue-600"> MyCost</label>
                                         </div>
 
                                         <div class="w-full md:w-1/2 pt-1">
@@ -237,23 +235,21 @@
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-lg font-bold">Pangkalan Data Rekod</h2>
                             <div class="flex gap-2">
-                                <button onclick="Records.refresh()" class="bg-gray-100 p-2 rounded hover:bg-gray-200"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                                <button onclick="Records.fetch()" class="bg-gray-100 p-2 rounded hover:bg-gray-200" title="Refresh"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
                                 <button onclick="Records.exportExcel()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm">Excel</button>
                             </div>
                         </div>
                         <div class="table-container border rounded">
-                            <table class="min-w-full bg-white text-sm">
-                                <thead class="bg-gray-100 text-gray-700 uppercase">
+                            <table class="min-w-full bg-white text-xs md:text-sm">
+                                <thead class="bg-gray-100 text-gray-700 uppercase leading-normal">
                                     <tr>
                                         <th class="p-3 text-left">Tarikh</th>
-                                        <th class="p-3 text-left">Nama</th>
-                                        <th class="p-3 text-left">IC</th>
+                                        <th class="p-3 text-left">Nama / IC</th>
                                         <th class="p-3 text-left">Jabatan</th>
                                         <th class="p-3 text-left">Perkara</th>
-                                        <th class="p-3 text-left">Status</th>
-                                    </tr>
+                                        <th class="p-3 text-left w-24">Status</th> <th class="p-3 text-left">Dikemaskini Pada</th> <th class="p-3 text-left">Dikemaskini Oleh</th> </tr>
                                 </thead>
-                                <tbody id="records-table-body" class="text-gray-600"></tbody>
+                                <tbody id="records-table-body" class="text-gray-600 font-light"></tbody>
                             </table>
                         </div>
                     </div>
@@ -263,8 +259,11 @@
             <div id="loan-page" class="hidden-section w-full">
                 <div class="bg-white p-6 rounded-lg shadow">
                     <h2 class="text-xl font-bold mb-4">Sistem Pinjaman Peranti</h2>
-                    <p class="text-gray-500">Modul pinjaman dimuatkan di sini...</p>
+                    <p class="text-gray-500 mb-4">Modul ini beroperasi secara berasingan.</p>
+                    <div class="bg-blue-50 border p-4 rounded text-center">
+                        Sila gunakan tab navigasi untuk mengakses fungsi penuh pinjaman (Pinjam/Pulang/Admin).
                     </div>
+                </div>
             </div>
 
         </main>
@@ -274,15 +273,14 @@
 
     <script>
         /**
-         * TABLE OF CONTENTS
+         * TABLE OF CONTENTS:
          * 1. CONFIGURATION & STATE
-         * 2. UTILITY FUNCTIONS (Logging, Toasts)
-         * 3. AUTHENTICATION MODULE
-         * 4. UI & NAVIGATION CONTROLLER
-         * 5. CALL LOG MODULE (Search, Forms, Master Data Update)
-         * 6. RECORDS MODULE (Fetch, Table)
-         * 7. LOAN MODULE (Placeholder structure)
-         * 8. INITIALIZATION
+         * 2. UTILITY FUNCTIONS
+         * 3. AUTH MODULE
+         * 4. NAVIGATION MODULE
+         * 5. CALL LOG MODULE (Input Form)
+         * 6. RECORDS MODULE (Database Table)
+         * 7. INITIALIZATION
          */
 
         // ==========================================
@@ -291,7 +289,6 @@
         const CONFIG = {
             supabaseUrl: 'https://objxfgosatmasjjifkkg.supabase.co',
             supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw',
-            adminEmail: 'suhardi.alias@moe.gov.my'
         };
 
         const STATE = {
@@ -300,12 +297,11 @@
             baseFontSize: 16
         };
 
-        // Initialize Supabase
         let supabase;
         try {
             supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
         } catch (e) {
-            alert("Error initializing Supabase. Check internet connection.");
+            console.error("Supabase Error:", e);
         }
 
         // ==========================================
@@ -326,13 +322,16 @@
                     el.classList.remove('bg-gray-50');
                     el.classList.add('bg-white', 'ring-2', 'ring-blue-100');
                     el.focus();
-                    // Trigger Master Data Update Button logic
                     document.getElementById('btn-update-master').classList.remove('hidden');
                 }
             },
 
             formatDate: (dateStr) => {
-                return new Date(dateStr).toLocaleString('ms-MY');
+                if(!dateStr) return '-';
+                return new Date(dateStr).toLocaleString('ms-MY', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
             }
         };
 
@@ -370,7 +369,7 @@
                 document.getElementById('login-page').classList.add('hidden-section');
                 document.getElementById('app-layout').classList.remove('hidden-section');
                 document.getElementById('user-display').innerText = user.email;
-                Navigation.switchMainTab('call-log'); // Default tab
+                Navigation.switchMainTab('call-log'); // Default
             },
 
             logout: async () => {
@@ -380,14 +379,13 @@
         };
 
         // ==========================================
-        // 4. UI & NAVIGATION CONTROLLER
+        // 4. NAVIGATION MODULE
         // ==========================================
         const Navigation = {
             switchMainTab: (tabId) => {
                 document.getElementById('call-log-section').classList.toggle('hidden-section', tabId !== 'call-log');
                 document.getElementById('loan-page').classList.toggle('hidden-section', tabId !== 'loan');
                 
-                // Update Buttons
                 const btnCall = document.getElementById('nav-call-log');
                 const btnLoan = document.getElementById('nav-loan');
                 
@@ -413,7 +411,7 @@
                 } else {
                     btnRec.className = "px-6 py-2 font-medium tab-active-sub";
                     btnSearch.className = "px-6 py-2 font-medium tab-inactive-sub";
-                    Records.fetch(); // Load data when clicking tab
+                    Records.fetch(); // Fetch data when entering tab
                 }
             }
         };
@@ -431,7 +429,7 @@
         // 5. CALL LOG MODULE (Logic for Form)
         // ==========================================
         const CallLog = {
-            // Live Search Functionality
+            // Live Search
             handleSearch: (query) => {
                 const dd = document.getElementById('search-results-dropdown');
                 if (STATE.searchTimeout) clearTimeout(STATE.searchTimeout);
@@ -445,14 +443,13 @@
                     dd.classList.remove('hidden');
                     dd.innerHTML = '<div class="p-2 text-center text-xs">Loading...</div>';
 
-                    // Query Personnel Table
                     const { data } = await supabase.from('personnel').select('*')
                         .or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%,department.ilike.%${query}%`)
                         .limit(5);
 
                     dd.innerHTML = '';
 
-                    // Option 1: No Results -> Offer to Add New
+                    // Option A: Add New User
                     if (!data || data.length === 0) {
                         const item = document.createElement('div');
                         item.className = "p-3 hover:bg-green-50 text-green-700 cursor-pointer text-sm font-bold border-b";
@@ -462,7 +459,7 @@
                         return;
                     }
 
-                    // Option 2: Show Results
+                    // Option B: Select Existing
                     data.forEach(p => {
                         const item = document.createElement('div');
                         item.className = "p-3 hover:bg-blue-50 cursor-pointer border-b";
@@ -473,80 +470,57 @@
                 }, 300);
             },
 
-            // Fill form with existing data
             fillForm: (data) => {
                 const fields = ['nama', 'ic', 'kod_ptj', 'department', 'emel', 'telefon', 'gred'];
                 fields.forEach(key => {
-                    // Map 'ic' to 'ic_number' from DB
                     const dbKey = key === 'ic' ? 'ic_number' : key;
                     document.getElementById(key).value = data[dbKey] || '';
                 });
                 document.getElementById('search-results-dropdown').classList.add('hidden');
                 document.getElementById('is-new-user').value = 'false';
-                // Hide update master button until they edit something
                 document.getElementById('btn-update-master').classList.add('hidden');
                 CallLog.checkValidity();
             },
 
-            // Prepare form for new user
             prepareNewUser: (name) => {
                 document.getElementById('data-form').reset();
                 document.getElementById('nama').value = name.toUpperCase();
                 document.getElementById('is-new-user').value = 'true';
-                
-                // Unlock all fields automatically
                 ['nama', 'ic', 'kod_ptj', 'department', 'emel', 'telefon', 'gred'].forEach(id => Utils.enableField(id));
-                
                 document.getElementById('search-results-dropdown').classList.add('hidden');
-                // Hide master update button for new users (saving happens on submit)
                 document.getElementById('btn-update-master').classList.add('hidden');
                 CallLog.checkValidity();
             },
 
-            enableEdit: (id) => {
-                Utils.enableField(id);
-            },
+            enableEdit: (id) => Utils.enableField(id),
 
-            // Update Issue Dropdown based on Radio Selection
             updateIssues: (system) => {
                 const dd = document.getElementById('issue-dropdown');
                 dd.innerHTML = '<option value="" disabled selected>Pilih Isu</option>';
                 
-                const commonIssues = ["Masalah Login / ID", "Sistem Error", "Lain-lain"];
-                const specificIssues = {
-                    'portal': ["Grey Out", "Ralat Profil", ...commonIssues],
-                    'ecp450': ["Ralat HKP", "Dokumen Hilang", ...commonIssues],
-                    // Add more mappings as needed
-                };
+                const ecp450 = ["Sah grey out", "Ralat HKP", "Ralat No telefon", "Ralat Gred", "Tiada dokumen", "Salah URL", "ID lock", "Emel salah", "Lain-lain"];
+                const generic = ["Masalah role", "ID lock", "Lain-lain"];
+                const list = system.includes('ecp') ? ecp450 : generic;
 
-                const list = specificIssues[system] || commonIssues;
                 list.forEach(i => {
-                    const opt = document.createElement('option');
-                    opt.value = i; opt.text = i;
+                    const opt = document.createElement('option'); opt.value = i; opt.text = i;
                     dd.appendChild(opt);
                 });
-                
                 document.getElementById('issue-dropdown-container').classList.remove('hidden');
             },
 
-            // Real-time Form Validation
             checkValidity: () => {
-                const requiredFields = ['nama', 'ic', 'department', 'kod_ptj'];
-                const textValid = requiredFields.every(id => document.getElementById(id).value.trim() !== '');
+                const required = ['nama', 'ic', 'department', 'kod_ptj'];
+                const textValid = required.every(id => document.getElementById(id).value.trim() !== '');
                 const radioValid = document.querySelector('input[name="system_type"]:checked') !== null;
                 const dropValid = document.getElementById('issue-dropdown').value !== '';
 
                 const btn = document.getElementById('submit-btn');
-                if (textValid && radioValid && dropValid) {
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                } else {
-                    btn.disabled = true;
-                    btn.classList.add('opacity-50', 'cursor-not-allowed');
-                }
+                btn.disabled = !(textValid && radioValid && dropValid);
+                if (!btn.disabled) btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                else btn.classList.add('opacity-50', 'cursor-not-allowed');
             },
 
-            // Logic: Update Master Data Only (The hidden button)
             updateMasterData: async () => {
                 const payload = {
                     ic_number: document.getElementById('ic').value,
@@ -557,12 +531,9 @@
                     telefon: document.getElementById('telefon').value,
                     gred: document.getElementById('gred').value
                 };
+                if (!payload.ic_number) return alert("IC is required.");
 
-                if (!payload.ic_number) return alert("IC is required to update.");
-
-                // Check exist
                 const { data: exist } = await supabase.from('personnel').select('id').eq('ic_number', payload.ic_number).maybeSingle();
-                
                 let error;
                 if(exist) {
                     const { error: err } = await supabase.from('personnel').update(payload).eq('ic_number', payload.ic_number);
@@ -575,17 +546,13 @@
                 if(!error) {
                     Utils.showToast("Data Induk Dikemaskini!");
                     document.getElementById('btn-update-master').classList.add('hidden');
-                } else {
-                    alert("Gagal: " + error.message);
-                }
+                } else alert("Gagal: " + error.message);
             },
 
-            // Submit the Main Form (Log + Auto Update Master)
             submit: async (e) => {
                 e.preventDefault();
                 if(!STATE.currentUser) return alert("Session expired.");
 
-                // 1. Gather Data
                 const formData = {
                     ic_number: document.getElementById('ic').value,
                     nama: document.getElementById('nama').value,
@@ -601,95 +568,133 @@
                 const other = document.getElementById('other-issue-input').value;
                 const notes = `${system.toUpperCase()} - ${issue} ${issue === 'Lain-lain' ? '('+other+')' : ''}`;
 
-                // 2. Save Log Entry
                 const logEntry = {
-                    ...formData,
-                    confirmation: 'TIDAK',
-                    notes: notes,
-                    submitted_by: STATE.currentUser.id,
-                    perekod: STATE.currentUser.email
+                    ...formData, confirmation: 'TIDAK', notes: notes,
+                    submitted_by: STATE.currentUser.id, perekod: STATE.currentUser.email
                 };
 
                 const { error } = await supabase.from('rekod').insert([logEntry]);
 
                 if (!error) {
-                    // 3. Auto-Save Master Data in background
-                    CallLog.updateMasterData(); // Re-use the function we defined above
-                    
-                    Utils.showToast("Rekod Disimpan Berjaya!");
+                    CallLog.updateMasterData(); // Auto-save master
+                    Utils.showToast("Rekod Disimpan!");
                     document.getElementById('data-form').reset();
                     document.getElementById('issue-dropdown-container').classList.add('hidden');
                     CallLog.checkValidity();
-                } else {
-                    alert("Ralat: " + error.message);
-                }
+                } else alert("Ralat: " + error.message);
             }
         };
 
         // ==========================================
-        // 6. RECORDS MODULE
+        // 6. RECORDS MODULE (Database Table)
         // ==========================================
         const Records = {
+            userMap: {}, // Cache for User IDs
+
             fetch: async () => {
                 const tbody = document.getElementById('records-table-body');
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4"><div class="loader"></div></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4"><div class="loader"></div></td></tr>';
 
-                const { data, error } = await supabase.from('rekod')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
+                try {
+                    // Fetch Records & User List (to resolve emails to names)
+                    const [ { data: records, error: err1 }, { data: users, error: err2 } ] = await Promise.all([
+                        supabase.from('rekod').select('*').order('created_at', { ascending: false }).limit(100),
+                        supabase.from('user_ba').select('name, emel')
+                    ]);
 
-                if (error) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-red-500 p-4">Error: ${error.message}</td></tr>`;
-                    return;
+                    if (err1) throw err1;
+
+                    // Build Map
+                    Records.userMap = {};
+                    if(users) users.forEach(u => { if(u.emel) Records.userMap[u.emel.toLowerCase()] = u.name; });
+
+                    tbody.innerHTML = '';
+                    if(!records || !records.length) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4">Tiada rekod.</td></tr>'; return;
+                    }
+
+                    records.forEach(r => {
+                        // Formatting
+                        const dateCreated = Utils.formatDate(r.created_at);
+                        const dateUpdated = r.status_updated_at ? Utils.formatDate(r.status_updated_at) : '-';
+                        
+                        // Resolve Name Logic
+                        const resolveName = (email) => {
+                            if(!email) return '-';
+                            if(Records.userMap[email.toLowerCase()]) return Records.userMap[email.toLowerCase()];
+                            return email.split('@')[0].toUpperCase();
+                        };
+                        const updatedBy = resolveName(r.status_updated_by);
+
+                        // Dropdown Logic
+                        const isYes = r.confirmation === 'YA';
+                        const selectClass = isYes ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300';
+
+                        tbody.innerHTML += `
+                            <tr class="border-b hover:bg-gray-50 align-top">
+                                <td class="p-3">${dateCreated}</td>
+                                <td class="p-3">
+                                    <div class="font-bold text-gray-700">${r.nama}</div>
+                                    <div class="text-xs text-gray-500">${r.ic_number}</div>
+                                </td>
+                                <td class="p-3 text-xs">${r.department}</td>
+                                <td class="p-3 text-sm">${r.notes}</td>
+                                
+                                <td class="p-3">
+                                    <select onchange="Records.updateStatus('${r.id}', this.value)" 
+                                            class="border rounded px-2 py-1 text-xs font-bold cursor-pointer outline-none focus:ring-2 ${selectClass}">
+                                        <option value="YA" ${isYes ? 'selected' : ''}>YA</option>
+                                        <option value="TIDAK" ${!isYes ? 'selected' : ''}>TIDAK</option>
+                                    </select>
+                                </td>
+
+                                <td class="p-3 text-xs text-gray-600">${dateUpdated}</td>
+                                <td class="p-3 text-xs font-medium text-blue-700">${updatedBy}</td>
+                            </tr>
+                        `;
+                    });
+
+                } catch (e) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-red-500 p-4 text-center">Error: ${e.message}</td></tr>`;
                 }
-
-                tbody.innerHTML = '';
-                data.forEach(r => {
-                    const statusColor = r.confirmation === 'YA' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
-                    tbody.innerHTML += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-3">${Utils.formatDate(r.created_at)}</td>
-                            <td class="p-3 font-medium">${r.nama}</td>
-                            <td class="p-3 text-gray-500">${r.ic_number}</td>
-                            <td class="p-3">${r.department}</td>
-                            <td class="p-3 text-sm">${r.notes}</td>
-                            <td class="p-3">
-                                <span class="px-2 py-1 rounded text-xs font-bold ${statusColor}">${r.confirmation}</span>
-                            </td>
-                        </tr>
-                    `;
-                });
             },
-            
+
+            updateStatus: async (id, newValue) => {
+                if(!STATE.currentUser) return alert("Session expired.");
+                
+                Utils.showToast("Mengemaskini...");
+                const payload = {
+                    confirmation: newValue,
+                    status_updated_at: new Date().toISOString(),
+                    status_updated_by: STATE.currentUser.email
+                };
+
+                const { error } = await supabase.from('rekod').update(payload).eq('id', id);
+                if(error) alert("Error updating: " + error.message);
+                else {
+                    Utils.showToast("Berjaya dikemaskini!");
+                    Records.fetch(); // Refresh table to show new time/user
+                }
+            },
+
             exportExcel: () => {
-                // Implementation for SheetJS export
-                alert("Export logic goes here.");
+                // Basic Export
+                alert("Export to Excel placeholder.");
             }
         };
 
         // ==========================================
-        // 8. INITIALIZATION
+        // 7. INITIALIZATION
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Initialize Icons
             if (typeof lucide !== 'undefined') lucide.createIcons();
-
-            // 2. Check Login Status
             Auth.init();
 
-            // 3. Attach Event Listeners
-            
-            // Login Form
+            // Listeners
             document.getElementById('login-form').addEventListener('submit', Auth.login);
-
-            // Search Input
             document.getElementById('global-search').addEventListener('input', (e) => CallLog.handleSearch(e.target.value));
-
-            // Main Data Form Submit
             document.getElementById('data-form').addEventListener('submit', CallLog.submit);
 
-            // Radio Buttons Change (System Type)
             document.querySelectorAll('input[name="system_type"]').forEach(radio => {
                 radio.addEventListener('change', (e) => {
                     CallLog.updateIssues(e.target.value);
@@ -697,26 +702,21 @@
                 });
             });
 
-            // Issue Dropdown Change
             document.getElementById('issue-dropdown').addEventListener('change', (e) => {
-                const isOther = e.target.value === 'Lain-lain';
-                document.getElementById('other-issue-input').classList.toggle('hidden', !isOther);
+                document.getElementById('other-issue-input').classList.toggle('hidden', e.target.value !== 'Lain-lain');
                 CallLog.checkValidity();
             });
 
-            // Input Validation & Master Button Visibility Trigger
             const inputs = document.querySelectorAll('#data-form input, #data-form select');
             inputs.forEach(input => {
                 input.addEventListener('input', () => {
                     CallLog.checkValidity();
-                    // If user is editing a read-only field (now enabled), show master save button
                     if(!input.readOnly && input.id !== 'other-issue-input') {
                          document.getElementById('btn-update-master').classList.remove('hidden');
                     }
                 });
             });
         });
-
     </script>
 </body>
 </html>
