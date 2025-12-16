@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod IT (Final v8)</title>
+    <title>Sistem Rekod IT (Final v9)</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -234,7 +234,6 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div><label class="block text-sm font-medium mb-1">Nama Pengguna</label><input type="text" id="loanUserName" list="userList" class="w-full px-3 py-2 border rounded-lg" required><datalist id="userList"></datalist></div>
                                 <div><label class="block text-sm font-medium mb-1">Pilih Peranti</label><select id="deviceSelect" class="w-full px-3 py-2 border rounded-lg" required><option value="" disabled selected>Pilih...</option></select></div>
-                                <!-- DATE Restriction applied via JS in Loan.switchTab -->
                                 <div><label class="block text-sm font-medium mb-1">Mula</label><input type="date" id="loanStartDate" class="w-full px-3 py-2 border rounded-lg" required></div>
                                 <div><label class="block text-sm font-medium mb-1">Tamat</label><input type="date" id="loanEndDate" class="w-full px-3 py-2 border rounded-lg" required></div>
                             </div>
@@ -399,13 +398,23 @@
             exportExcel: async () => {
                 const { data } = await supabase.from('rekod').select('*').order('created_at', {ascending:false});
                 if(!data || !data.length) return alert("Tiada data untuk diexport.");
-                const rows = data.map(r => ({ "Tarikh": Utils.formatDate(r.created_at), "Nama": r.nama, "IC": r.ic_number, "Jabatan": r.department, "Perkara": r.notes, "Direkod Oleh": r.perekod, "Status": r.confirmation, "Dikemaskini Pada": Utils.formatDate(r.status_updated_at), "Dikemaskini Oleh": r.status_updated_by }));
+                const rows = data.map(r => ({
+                    "Tarikh": Utils.formatDate(r.created_at),
+                    "Nama / IC": `${r.nama} (${r.ic_number})`,
+                    "Jabatan": r.department,
+                    "Perkara": r.notes,
+                    "Direkod Oleh": r.perekod ? (Records.userMap[r.perekod.toLowerCase()] || r.perekod) : '-',
+                    "Status": r.confirmation,
+                    "Dikemaskini Pada": Utils.formatDate(r.status_updated_at),
+                    "Dikemaskini Oleh": r.status_updated_by ? (Records.userMap[r.status_updated_by.toLowerCase()] || r.status_updated_by) : '-'
+                }));
                 const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Rekod"); XLSX.writeFile(wb, "Rekod_Aduan.xlsx");
             }
         };
 
         const Loan = {
             currentHistory: [],
+            deviceMap: {},
             switchTab: (id) => {
                 document.querySelectorAll('.loan-tab-content').forEach(e => e.classList.add('hidden')); document.getElementById('loan-tab-'+id).classList.remove('hidden');
                 ['borrow','return','admin','history'].forEach(t => { const btn = document.getElementById('btn-loan-'+t); if(t===id) { btn.classList.add('tab-active-sub'); btn.classList.remove('tab-inactive-sub'); } else { btn.classList.add('tab-inactive-sub'); btn.classList.remove('tab-active-sub'); } });
@@ -431,6 +440,12 @@
             submit: async () => {
                 const u = document.getElementById('loanUserName').value, d = document.getElementById('deviceSelect').value, s = document.getElementById('loanStartDate').value, e = document.getElementById('loanEndDate').value;
                 if(!u || !d || !s || !e) return alert("Sila isi semua.");
+                
+                // DATE VALIDATION
+                const sDate = new Date(s);
+                const eDate = new Date(e);
+                if(eDate < sDate) return alert("Ralat: Tarikh Tamat tidak boleh sebelum Tarikh Mula.");
+
                 const { error } = await supabase.from('rekod_pinjaman').insert([{ user_name: u, device_tag: d, start_date: s, end_date: e, usage_type: document.getElementById('usageType').value, usage_details: document.getElementById('usageDetails').value, status: 'Active', issued_by: STATE.currentUser.email }]);
                 if(!error) { await supabase.from('device_inventory').update({status:'Dipinjam'}).eq('tag',d); Utils.showToast("Pinjaman Direkod!"); Loan.loadData(); document.getElementById('loanForm').reset(); }
             },
@@ -441,14 +456,18 @@
             loadHistory: async () => {
                 const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="9"><div class="loader"></div></td></tr>';
                 const [ { data: loans }, { data: devices } ] = await Promise.all([ supabase.from('rekod_pinjaman').select('*').order('created_at',{ascending:false}), supabase.from('device_inventory').select('tag, serial') ]);
-                const devMap = {}; if(devices) devices.forEach(d => devMap[d.tag] = d.serial);
+                
+                Loan.deviceMap = {}; 
+                if(devices) devices.forEach(d => Loan.deviceMap[d.tag] = d.serial);
+                
                 Loan.currentHistory = loans || []; tb.innerHTML = '';
                 const today = new Date().setHours(0,0,0,0);
+                
                 loans.forEach(l => {
                     const receivedBy = l.received_by ? l.received_by.split('@')[0] : '-';
-                    // Logic: If Active & Date passed -> Late. If Returned & Return Date > End Date -> Late.
                     const isLate = (l.status === 'Active' && new Date(l.end_date) < today) || (l.status === 'Returned' && new Date(l.return_date) > new Date(l.end_date));
-                    tb.innerHTML += `<tr class="border-b ${isLate ? 'bg-red-50 text-red-900 font-bold' : ''}"><td class="p-3">${Utils.formatDate(l.created_at)}</td><td class="p-3 font-medium">${l.user_name}</td><td class="p-3 text-blue-600">${l.device_tag}</td><td class="p-3 text-xs font-mono">${devMap[l.device_tag]||'-'}</td><td class="p-3 text-xs">${l.start_date} - ${l.end_date}</td><td class="p-3 text-xs text-blue-700">${l.issued_by.split('@')[0]}</td><td class="p-3">${l.return_date?Utils.formatDate(l.return_date):'-'}</td><td class="p-3 text-xs">${receivedBy}</td><td class="p-3"><span class="px-2 py-1 rounded text-xs ${l.status==='Active'?'bg-green-100 text-green-800':'bg-gray-200'}">${l.status}</span></td></tr>`;
+                    
+                    tb.innerHTML += `<tr class="border-b ${isLate ? 'bg-red-50 text-red-900 font-bold' : ''}"><td class="p-3">${Utils.formatDate(l.created_at)}</td><td class="p-3 font-medium">${l.user_name}</td><td class="p-3 text-blue-600">${l.device_tag}</td><td class="p-3 text-xs font-mono">${Loan.deviceMap[l.device_tag]||'-'}</td><td class="p-3 text-xs">${l.start_date} - ${l.end_date}</td><td class="p-3 text-xs text-blue-700">${l.issued_by.split('@')[0]}</td><td class="p-3">${l.return_date?Utils.formatDate(l.return_date):'-'}</td><td class="p-3 text-xs">${receivedBy}</td><td class="p-3"><span class="px-2 py-1 rounded text-xs ${l.status==='Active'?'bg-green-100 text-green-800':'bg-gray-200'}">${l.status}</span></td></tr>`;
                 });
             },
             checkOverdueLoans: async () => {
@@ -469,11 +488,42 @@
             },
             exportHistoryExcel: () => {
                 if(!Loan.currentHistory.length) return alert("Tiada data.");
-                const rows = Loan.currentHistory.map(l => ({ "Tarikh Mohon": Utils.formatDate(l.created_at), "Peminjam": l.user_name, "Peranti": l.device_tag, "Mula": l.start_date, "Tamat": l.end_date, "Dikeluarkan Oleh": l.issued_by, "Pulang": l.return_date||'-', "Diterima Oleh": l.received_by||'-', "Status": l.status }));
+                const rows = Loan.currentHistory.map(l => ({
+                    "Tarikh Mohon": Utils.formatDate(l.created_at),
+                    "Peminjam": l.user_name,
+                    "Peranti": l.device_tag,
+                    "No. Siri": Loan.deviceMap[l.device_tag] || '-',
+                    "Tempoh": `${l.start_date} - ${l.end_date}`,
+                    "Dikeluarkan Oleh": l.issued_by ? l.issued_by.split('@')[0] : '-',
+                    "Pulang": l.return_date ? Utils.formatDate(l.return_date) : '-',
+                    "Diterima Oleh": l.received_by ? l.received_by.split('@')[0] : '-',
+                    "Status": l.status
+                }));
                 const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sejarah"); XLSX.writeFile(wb, "Sejarah_Pinjaman.xlsx");
             },
-            addUser: async () => { const n = document.getElementById('newUserName').value; if(n) { await supabase.from('user_ba').insert([{name:n, emel:document.getElementById('newUserEmail').value}]); Loan.loadData(); Utils.showToast("User Added"); } },
-            addDevice: async () => { const t = document.getElementById('newTag').value; if(t) { await supabase.from('device_inventory').insert([{tag:t, type:document.getElementById('newType').value, serial:document.getElementById('newSerial').value, status:'Tersedia'}]); Loan.loadData(); Utils.showToast("Device Added"); } }
+            addUser: async () => { 
+                const n = document.getElementById('newUserName').value; 
+                const e = document.getElementById('newUserEmail').value;
+                if(n) { 
+                    await supabase.from('user_ba').insert([{name:n, emel:e}]); 
+                    await Loan.loadData(); 
+                    document.getElementById('newUserName').value = '';
+                    document.getElementById('newUserEmail').value = '';
+                    Utils.showToast("User Added & List Updated"); 
+                } 
+            },
+            addDevice: async () => { 
+                const t = document.getElementById('newTag').value; 
+                const s = document.getElementById('newSerial').value;
+                const type = document.getElementById('newType').value;
+                if(t) { 
+                    await supabase.from('device_inventory').insert([{tag:t, type:type, serial:s, status:'Tersedia'}]); 
+                    await Loan.loadData(); 
+                    document.getElementById('newTag').value = '';
+                    document.getElementById('newSerial').value = '';
+                    Utils.showToast("Device Added & List Updated"); 
+                } 
+            }
         };
 
         document.addEventListener('DOMContentLoaded', () => { if (typeof lucide !== 'undefined') lucide.createIcons(); Auth.init(); 
