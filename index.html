@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod IT (Final v14)</title>
+    <title>Sistem Rekod IT (Final v15 - Dynamic Table)</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -73,6 +73,36 @@
         .tab-inactive-main { background-color: transparent; color: white; }
         .tab-active-sub { color: #2563eb !important; border-bottom: 2px solid #2563eb !important; }
         .tab-inactive-sub { color: #6b7280; border-bottom: 2px solid transparent; }
+
+        /* Draggable Table Styles */
+        th.draggable-header {
+            cursor: grab;
+            position: relative;
+            transition: background-color 0.2s;
+        }
+        th.draggable-header:hover {
+            background-color: #e5e7eb;
+        }
+        th.draggable-header:active {
+            cursor: grabbing;
+        }
+        th.drag-over {
+            border-left: 3px solid #3b82f6;
+            background-color: #eff6ff;
+        }
+        [contenteditable]:focus {
+            outline: 2px solid #3b82f6;
+            background-color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        [contenteditable]:hover::after {
+            content: "✎";
+            font-size: 0.7em;
+            color: #9ca3af;
+            margin-left: 4px;
+            vertical-align: super;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -216,7 +246,7 @@
                     </div>
                 </div>
 
-                <!-- Database Table (UPDATED STRUCTURE) -->
+                <!-- Database Table (DYNAMIC & DRAGGABLE) -->
                 <div id="sub-records-page" class="hidden-section">
                     <div class="bg-white p-6 rounded-lg shadow border">
                         <div class="flex justify-between items-center mb-4">
@@ -226,23 +256,18 @@
                                 <button onclick="Records.exportExcel()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm flex items-center gap-2"><i data-lucide="sheet" class="w-4 h-4"></i> Excel</button>
                             </div>
                         </div>
+                        <div class="mb-2 text-xs text-gray-500">
+                            <i data-lucide="info" class="w-3 h-3 inline"></i> 
+                            Drag headers to reorder. Click text to edit header name.
+                        </div>
                         <div class="table-container border rounded">
                             <table class="min-w-full bg-white text-xs md:text-sm">
-                                <thead class="bg-gray-100 text-gray-700 uppercase leading-normal">
-                                    <tr>
-                                        <th class="p-3 text-left">Tarikh Event</th>
-                                        <th class="p-3 text-left">Nama / IC</th>
-                                        <th class="p-3 text-left">Jabatan</th>
-                                        <th class="p-3 text-left">Komunikasi</th>
-                                        <th class="p-3 text-left">Sistem</th>
-                                        <th class="p-3 text-left">Perkara/Masalah</th>
-                                        <th class="p-3 text-left">Direkod Oleh</th>
-                                        <th class="p-3 text-left">Dikemaskini Pada</th>
-                                        <th class="p-3 text-left">Dikemaskini Oleh</th> <!-- ADDED -->
-                                        <th class="p-3 text-left w-28">Status Selesai</th>
-                                    </tr>
+                                <thead id="records-table-head" class="bg-gray-100 text-gray-700 uppercase leading-normal">
+                                    <!-- Dynamic Headers Generated via JS -->
                                 </thead>
-                                <tbody id="records-table-body" class="text-gray-600 font-light"></tbody>
+                                <tbody id="records-table-body" class="text-gray-600 font-light">
+                                    <!-- Dynamic Body Generated via JS -->
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -385,7 +410,7 @@
                 document.getElementById('sub-search-page').classList.toggle('hidden-section', subTabId !== 'search'); document.getElementById('sub-records-page').classList.toggle('hidden-section', subTabId !== 'records');
                 const btnSearch = document.getElementById('btn-sub-search'); const btnRec = document.getElementById('btn-sub-records');
                 if (subTabId === 'search') { btnSearch.className = "px-6 py-2 font-medium tab-active-sub"; btnRec.className = "px-6 py-2 font-medium tab-inactive-sub"; } 
-                else { btnRec.className = "px-6 py-2 font-medium tab-active-sub"; btnSearch.className = "px-6 py-2 font-medium tab-inactive-sub"; Records.fetch(); }
+                else { btnRec.className = "px-6 py-2 font-medium tab-active-sub"; btnSearch.className = "px-6 py-2 font-medium tab-inactive-sub"; Records.init(); }
             }
         };
 
@@ -419,7 +444,6 @@
                 CallLog.options.komunikasi.forEach(k => {
                     const label = document.createElement('label'); label.className = "flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-blue-50 text-sm";
                     label.innerHTML = `<input type="radio" name="komunikasi" value="${k}" class="text-blue-600"> ${k}`; 
-                    // Using event delegation via onchange on parent, or adding specific listener
                     label.querySelector('input').onchange = CallLog.checkValidity; 
                     conK.appendChild(label);
                 });
@@ -497,7 +521,6 @@
                 btnText.innerText = "Sending...";
 
                 try {
-                    // Safe Data Extraction
                     const sysEl = document.querySelector('input[name="system_type"]:checked');
                     const komEl = document.querySelector('input[name="komunikasi"]:checked');
                     
@@ -515,74 +538,289 @@
                     }; 
                     
                     const { error } = await supabase.from('rekod').insert([logEntry]); 
+                    if (error) throw error;
                     
-                    if (error) {
-                        throw error;
-                    } else { 
-                        CallLog.updateMasterData(); 
-                        Utils.showToast("Rekod Disimpan!"); 
-                        document.getElementById('data-form').reset(); 
-                        CallLog.checkValidity(); 
-                    }
+                    CallLog.updateMasterData(); 
+                    Utils.showToast("Rekod Disimpan!"); 
+                    document.getElementById('data-form').reset(); 
+                    CallLog.checkValidity(); 
                 } catch (err) {
-                    alert("Ralat Menyimpan: " + err.message + "\n\n(Tip: Pastikan table 'rekod' ada column: komunikasi, sistem, perkara)");
-                    Utils.log("Save Error: " + err.message);
+                    alert("Ralat Menyimpan: " + err.message);
                 } finally {
                     btn.disabled = false;
                     btnText.innerText = "Hantar Rekod";
-                    CallLog.checkValidity(); // Re-verify state
+                    CallLog.checkValidity(); 
                 }
             }
         };
 
         const Records = {
             userMap: {},
-            fetch: async () => {
-                const tbody = document.getElementById('records-table-body'); tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4"><div class="loader"></div></td></tr>';
-                try {
-                    const [ { data: records }, { data: users } ] = await Promise.all([ supabase.from('rekod').select('*').order('created_at', { ascending: false }).limit(100), supabase.from('user_ba').select('name, emel') ]);
-                    if(users) users.forEach(u => { if(u.emel) Records.userMap[u.emel.toLowerCase()] = u.name; });
-                    tbody.innerHTML = ''; if(!records || !records.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4">Tiada rekod.</td></tr>'; return; }
-                    records.forEach(r => {
-                        const recName = r.perekod ? (Records.userMap[r.perekod.toLowerCase()] || r.perekod.split('@')[0]) : '-';
-                        const updName = r.status_updated_by ? (Records.userMap[r.status_updated_by.toLowerCase()] || r.status_updated_by.split('@')[0]) : '-';
-                        
-                        let displaySistem = r.sistem;
-                        let displayPerkara = r.perkara;
-                        if (!displaySistem && r.notes && r.notes.includes(' - ')) displaySistem = r.notes.split(' - ')[0];
-                        if (!displayPerkara && r.notes && r.notes.includes(' - ')) { const parts = r.notes.split(' - '); if(parts.length > 1) displayPerkara = parts[1].split(' (')[0]; }
-
-                        tbody.innerHTML += `<tr class="border-b hover:bg-gray-50 align-top">
-                            <td class="p-3">${Utils.formatDate(r.created_at)}</td>
-                            <td class="p-3"><div class="font-bold text-gray-800">${r.nama}</div><div class="text-xs text-gray-500">${r.ic_number}</div></td>
-                            <td class="p-3 text-xs">${r.department}</td>
-                            <td class="p-3 text-xs font-semibold text-purple-700">${r.komunikasi || '-'}</td>
-                            <td class="p-3 text-xs font-bold text-gray-600">${displaySistem || '-'}</td>
-                            <td class="p-3 text-sm">${displayPerkara || '-'}</td>
-                            <td class="p-3 text-xs font-medium text-blue-700">${recName}</td>
-                            <td class="p-3 text-xs text-gray-600">${Utils.formatDate(r.status_updated_at)}</td>
-                            <td class="p-3 text-xs font-medium text-blue-700">${updName}</td>
-                            <td class="p-3"><select onchange="Records.updateStatus('${r.id}', this.value)" class="border rounded px-2 py-1 text-xs font-bold ${r.confirmation==='YA'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}"><option value="YA" ${r.confirmation==='YA'?'selected':''}>YA</option><option value="TIDAK" ${r.confirmation!=='YA'?'selected':''}>TIDAK</option></select></td>
-                        </tr>`;
-                    });
-                } catch (e) { tbody.innerHTML = `<tr><td colspan="9" class="text-red-500 p-4">Error: ${e.message}</td></tr>`; }
+            currentRecords: [],
+            // Initial Column Configuration
+            columns: [
+                { id: 'created_at', label: 'Tarikh Event' },
+                { id: 'nama_ic', label: 'Nama / IC' },
+                { id: 'department', label: 'Jabatan' },
+                { id: 'komunikasi', label: 'Komunikasi' },
+                { id: 'sistem', label: 'Sistem' },
+                { id: 'perkara', label: 'Perkara/Masalah' },
+                { id: 'perekod', label: 'Direkod Oleh' },
+                { id: 'updated_at', label: 'Dikemaskini Pada' },
+                { id: 'updated_by', label: 'Dikemaskini Oleh' },
+                { id: 'status', label: 'Status Selesai' }
+            ],
+            
+            init: () => {
+                Records.renderHeader();
+                Records.fetch();
             },
-            updateStatus: async (id, val) => { if(!STATE.currentUser) return alert("Session expired."); await supabase.from('rekod').update({ confirmation: val, status_updated_at: new Date(), status_updated_by: STATE.currentUser.email }).eq('id', id); Utils.showToast("Status Dikemaskini"); Records.fetch(); },
+
+            renderHeader: () => {
+                const thead = document.getElementById('records-table-head');
+                thead.innerHTML = '';
+                const tr = document.createElement('tr');
+                
+                Records.columns.forEach((col, index) => {
+                    const th = document.createElement('th');
+                    th.className = "p-3 text-left draggable-header select-none border-r border-gray-200 last:border-0";
+                    th.draggable = true;
+                    th.dataset.index = index;
+                    
+                    // Header Content (Editable Span)
+                    const span = document.createElement('span');
+                    span.contentEditable = true;
+                    span.innerText = col.label;
+                    span.className = "cursor-text focus:cursor-text w-full block";
+                    span.onblur = (e) => {
+                        Records.columns[index].label = e.target.innerText;
+                        // console.log("Updated header:", Records.columns);
+                    };
+                    
+                    // Prevent drag when clicking text to edit
+                    span.onmousedown = (e) => e.stopPropagation(); 
+
+                    th.appendChild(span);
+
+                    // Drag Events
+                    th.addEventListener('dragstart', Records.handleDragStart);
+                    th.addEventListener('dragover', Records.handleDragOver);
+                    th.addEventListener('dragleave', Records.handleDragLeave);
+                    th.addEventListener('drop', Records.handleDrop);
+                    
+                    tr.appendChild(th);
+                });
+                thead.appendChild(tr);
+            },
+
+            // Drag and Drop Logic
+            dragSrcIndex: null,
+            handleDragStart: (e) => {
+                Records.dragSrcIndex = e.target.closest('th').dataset.index;
+                e.dataTransfer.effectAllowed = 'move';
+                e.target.style.opacity = '0.4';
+            },
+            handleDragOver: (e) => {
+                if (e.preventDefault) e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const th = e.target.closest('th');
+                if (th) th.classList.add('drag-over');
+                return false;
+            },
+            handleDragLeave: (e) => {
+                const th = e.target.closest('th');
+                if (th) th.classList.remove('drag-over');
+            },
+            handleDrop: (e) => {
+                if (e.stopPropagation) e.stopPropagation();
+                const th = e.target.closest('th');
+                if (!th) return;
+                
+                th.classList.remove('drag-over');
+                document.querySelectorAll('.draggable-header').forEach(el => el.style.opacity = '1');
+
+                const dragIndex = parseInt(Records.dragSrcIndex);
+                const dropIndex = parseInt(th.dataset.index);
+
+                if (dragIndex !== dropIndex) {
+                    // Reorder columns array
+                    const item = Records.columns.splice(dragIndex, 1)[0];
+                    Records.columns.splice(dropIndex, 0, item);
+                    
+                    // Re-render
+                    Records.renderHeader();
+                    Records.renderBody(); // Re-render body to match new order
+                }
+                return false;
+            },
+
+            fetch: async () => {
+                const tbody = document.getElementById('records-table-body'); 
+                tbody.innerHTML = '<tr><td colspan="100%" class="text-center p-4"><div class="loader"></div></td></tr>';
+                try {
+                    const [ { data: records }, { data: users } ] = await Promise.all([ 
+                        supabase.from('rekod').select('*').order('created_at', { ascending: false }).limit(100), 
+                        supabase.from('user_ba').select('name, emel') 
+                    ]);
+                    
+                    if(users) users.forEach(u => { if(u.emel) Records.userMap[u.emel.toLowerCase()] = u.name; });
+                    
+                    Records.currentRecords = records || [];
+                    Records.renderBody();
+
+                } catch (e) { tbody.innerHTML = `<tr><td colspan="100%" class="text-red-500 p-4">Error: ${e.message}</td></tr>`; }
+            },
+
+            renderBody: () => {
+                const tbody = document.getElementById('records-table-body');
+                tbody.innerHTML = '';
+                
+                if(!Records.currentRecords.length) { 
+                    tbody.innerHTML = '<tr><td colspan="100%" class="text-center p-4">Tiada rekod.</td></tr>'; 
+                    return; 
+                }
+
+                Records.currentRecords.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-gray-50 align-top";
+
+                    // Pre-process data fields
+                    const recName = r.perekod ? (Records.userMap[r.perekod.toLowerCase()] || r.perekod.split('@')[0]) : '-';
+                    const updName = r.status_updated_by ? (Records.userMap[r.status_updated_by.toLowerCase()] || r.status_updated_by.split('@')[0]) : '-';
+                    let displaySistem = r.sistem;
+                    let displayPerkara = r.perkara;
+                    if (!displaySistem && r.notes && r.notes.includes(' - ')) displaySistem = r.notes.split(' - ')[0];
+                    if (!displayPerkara && r.notes && r.notes.includes(' - ')) { const parts = r.notes.split(' - '); if(parts.length > 1) displayPerkara = parts[1].split(' (')[0]; }
+
+                    // Render columns based on current order
+                    Records.columns.forEach(col => {
+                        const td = document.createElement('td');
+                        td.className = "p-3";
+
+                        switch(col.id) {
+                            case 'created_at':
+                                td.innerText = Utils.formatDate(r.created_at);
+                                break;
+                            case 'nama_ic':
+                                td.innerHTML = `<div class="font-bold text-gray-800">${r.nama}</div><div class="text-xs text-gray-500">${r.ic_number}</div>`;
+                                break;
+                            case 'department':
+                                td.className += " text-xs";
+                                td.innerText = r.department;
+                                break;
+                            case 'komunikasi':
+                                // DYNAMIC DROPDOWN FOR KOMUNIKASI
+                                const selectKom = document.createElement('select');
+                                selectKom.className = "border rounded px-2 py-1 text-xs bg-white text-purple-700 w-full";
+                                
+                                // Get options (ensure CallLog initialized or use defaults)
+                                const komOpts = CallLog.options.komunikasi.length ? CallLog.options.komunikasi : ["Email", "Call", "WhatsApp", "Walk-in"];
+                                
+                                // Current value or fallback
+                                const currentKom = r.komunikasi || '';
+                                
+                                // Add default/placeholder if current not in list (optional)
+                                komOpts.forEach(opt => {
+                                    const option = document.createElement('option');
+                                    option.value = opt;
+                                    option.text = opt;
+                                    if(opt === currentKom) option.selected = true;
+                                    selectKom.appendChild(option);
+                                });
+                                
+                                selectKom.onchange = (e) => Records.updateField(r.id, 'komunikasi', e.target.value);
+                                td.appendChild(selectKom);
+                                break;
+                            case 'sistem':
+                                td.className += " text-xs font-bold text-gray-600";
+                                td.innerText = displaySistem || '-';
+                                break;
+                            case 'perkara':
+                                td.className += " text-sm";
+                                td.innerText = displayPerkara || '-';
+                                break;
+                            case 'perekod':
+                                td.className += " text-xs font-medium text-blue-700";
+                                td.innerText = recName;
+                                break;
+                            case 'updated_at':
+                                td.className += " text-xs text-gray-600";
+                                td.innerText = Utils.formatDate(r.status_updated_at);
+                                break;
+                            case 'updated_by':
+                                td.className += " text-xs font-medium text-blue-700";
+                                td.innerText = updName;
+                                break;
+                            case 'status':
+                                const selectStatus = document.createElement('select');
+                                selectStatus.className = `border rounded px-2 py-1 text-xs font-bold ${r.confirmation==='YA'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`;
+                                selectStatus.innerHTML = `<option value="YA" ${r.confirmation==='YA'?'selected':''}>YA</option><option value="TIDAK" ${r.confirmation!=='YA'?'selected':''}>TIDAK</option>`;
+                                selectStatus.onchange = (e) => Records.updateField(r.id, 'confirmation', e.target.value);
+                                td.appendChild(selectStatus);
+                                break;
+                            default:
+                                td.innerText = '-';
+                        }
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+            },
+
+            updateField: async (id, field, val) => {
+                if(!STATE.currentUser) return alert("Session expired.");
+                const updateData = {};
+                updateData[field] = val;
+                
+                // If updating status/confirmation, update metadata too
+                if(field === 'confirmation') {
+                    updateData.status_updated_at = new Date();
+                    updateData.status_updated_by = STATE.currentUser.email;
+                }
+
+                const { error } = await supabase.from('rekod').update(updateData).eq('id', id);
+                
+                if(error) {
+                    alert("Update failed: " + error.message);
+                } else {
+                    Utils.showToast(`${field === 'confirmation' ? 'Status' : 'Data'} Dikemaskini`);
+                    Records.fetch(); // Refresh to reflect changes (e.g. background colors)
+                }
+            },
+
             exportExcel: async () => {
                 const { data } = await supabase.from('rekod').select('*').order('created_at', {ascending:false});
                 if(!data || !data.length) return alert("Tiada data untuk diexport.");
-                const rows = data.map(r => ({
-                    "Tarikh Event": Utils.formatDate(r.created_at),
-                    "Nama / IC": `${r.nama} (${r.ic_number})`,
-                    "Jabatan": r.department,
-                    "Komunikasi": r.komunikasi || '-',
-                    "Sistem": r.sistem || (r.notes ? r.notes.split(' - ')[0] : '-'),
-                    "Perkara/Masalah": r.perkara || (r.notes && r.notes.includes(' - ') ? r.notes.split(' - ')[1].split(' (')[0] : '-'),
-                    "Direkod Oleh": r.perekod ? (Records.userMap[r.perekod.toLowerCase()] || r.perekod) : '-',
-                    "Dikemaskini Pada": Utils.formatDate(r.status_updated_at),
-                    "Status Selesai": r.confirmation
-                }));
-                const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Rekod"); XLSX.writeFile(wb, "Rekod_Aduan.xlsx");
+                
+                // Map data based on CURRENT Column Order and Custom Labels
+                const rows = data.map(r => {
+                    const rowData = {};
+                    
+                    Records.columns.forEach(col => {
+                        let value = '';
+                        switch(col.id) {
+                            case 'created_at': value = Utils.formatDate(r.created_at); break;
+                            case 'nama_ic': value = `${r.nama} (${r.ic_number})`; break;
+                            case 'department': value = r.department; break;
+                            case 'komunikasi': value = r.komunikasi || '-'; break;
+                            case 'sistem': value = r.sistem || (r.notes ? r.notes.split(' - ')[0] : '-'); break;
+                            case 'perkara': value = r.perkara || (r.notes && r.notes.includes(' - ') ? r.notes.split(' - ')[1].split(' (')[0] : '-'); break;
+                            case 'perekod': value = r.perekod ? (Records.userMap[r.perekod.toLowerCase()] || r.perekod) : '-'; break;
+                            case 'updated_at': value = Utils.formatDate(r.status_updated_at); break;
+                            case 'updated_by': value = r.status_updated_by ? (Records.userMap[r.status_updated_by.toLowerCase()] || r.status_updated_by.split('@')[0]) : '-'; break;
+                            case 'status': value = r.confirmation; break;
+                        }
+                        // Use the Editable Label as the Excel Header
+                        rowData[col.label] = value;
+                    });
+                    
+                    return rowData;
+                });
+
+                const ws = XLSX.utils.json_to_sheet(rows); 
+                const wb = XLSX.utils.book_new(); 
+                XLSX.utils.book_append_sheet(wb, ws, "Rekod"); 
+                XLSX.writeFile(wb, "Rekod_Aduan.xlsx");
             }
         };
 
