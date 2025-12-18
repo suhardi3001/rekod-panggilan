@@ -169,7 +169,7 @@
                                     <label class="block text-sm font-bold text-gray-800 mb-3 border-b pb-2">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
                                     
                                     <div class="space-y-6">
-                                        <!-- Medium Komunikasi -->
+                                        <!-- Komunikasi -->
                                         <div>
                                             <div class="flex justify-between items-center mb-2">
                                                 <label class="block text-sm font-semibold text-gray-700">Medium Komunikasi</label>
@@ -193,7 +193,7 @@
                                             <div id="container-sistem" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto"></div>
                                         </div>
 
-                                        <!-- Perkara (Isu) -->
+                                        <!-- Isu -->
                                         <div>
                                             <div class="flex justify-between items-center mb-2">
                                                 <label class="block text-sm font-semibold text-gray-700">Perkara (Isu)</label>
@@ -219,7 +219,7 @@
                     </div>
                 </div>
 
-                <!-- Database Table -->
+                <!-- Database Table (DYNAMIC & DRAGGABLE) -->
                 <div id="sub-records-page" class="hidden-section">
                     <div class="bg-white p-6 rounded-lg shadow border">
                         <div class="flex justify-between items-center mb-4">
@@ -228,6 +228,10 @@
                                 <button onclick="Records.fetch()" class="bg-gray-100 p-2 rounded hover:bg-gray-200" title="Refresh"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
                                 <button onclick="Records.exportExcel()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm flex items-center gap-2"><i data-lucide="sheet" class="w-4 h-4"></i> Excel</button>
                             </div>
+                        </div>
+                        <div class="mb-2 text-xs text-gray-500">
+                            <i data-lucide="info" class="w-3 h-3 inline"></i> 
+                            Drag headers to reorder. Click text to edit header name.
                         </div>
                         <div class="table-container border rounded">
                             <table class="min-w-full bg-white text-xs md:text-sm">
@@ -239,17 +243,77 @@
                 </div>
             </div>
 
-            <!-- MODULE 2: LOAN SYSTEM -->
+            <!-- MODULE 2: LOAN SYSTEM (RESTORED CONTENT) -->
             <div id="loan-page" class="hidden-section w-full">
                 <div class="bg-white p-6 rounded-lg shadow border">
                     <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-gray-800"><i data-lucide="monitor-smartphone"></i> Sistem Pinjaman Peranti</h2>
+                    
                     <div class="flex flex-wrap border-b mb-6 overflow-x-auto">
                         <button onclick="Loan.switchTab('borrow')" id="btn-loan-borrow" class="px-6 py-2 font-medium tab-active-sub">Pinjam</button>
                         <button onclick="Loan.switchTab('return')" id="btn-loan-return" class="px-6 py-2 font-medium tab-inactive-sub">Pulang</button>
                         <button onclick="Loan.switchTab('admin')" id="btn-loan-admin" class="px-6 py-2 font-medium tab-inactive-sub">Admin</button>
                         <button onclick="Loan.switchTab('history')" id="btn-loan-history" class="px-6 py-2 font-medium tab-inactive-sub">Sejarah</button>
                     </div>
-                    <!-- Loan Content Sections omitted for brevity but remain intact in the logic -->
+
+                    <!-- BORROW -->
+                    <div id="loan-tab-borrow" class="loan-tab-content">
+                        <form id="loanForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="block text-sm font-medium mb-1">Nama Pengguna</label><input type="text" id="loanUserName" list="userList" class="w-full px-3 py-2 border rounded-lg" required><datalist id="userList"></datalist></div>
+                                <div><label class="block text-sm font-medium mb-1">Pilih Peranti</label><select id="deviceSelect" class="w-full px-3 py-2 border rounded-lg" required><option value="" disabled selected>Pilih...</option></select></div>
+                                <div><label class="block text-sm font-medium mb-1">Mula</label><input type="date" id="loanStartDate" class="w-full px-3 py-2 border rounded-lg" required></div>
+                                <div><label class="block text-sm font-medium mb-1">Tamat</label><input type="date" id="loanEndDate" class="w-full px-3 py-2 border rounded-lg" required></div>
+                            </div>
+                            <div><label class="block text-sm font-medium mb-1">Jenis Kegunaan</label><select id="usageType" class="w-full px-3 py-2 border rounded-lg" required><option value="Kegunaan Dalaman">Kegunaan Dalaman</option><option value="Kegunaan Luar">Kegunaan Luar</option></select></div>
+                            <div><label class="block text-sm font-medium mb-1">Butiran</label><textarea id="usageDetails" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea></div>
+                            <button type="button" onclick="Loan.submit()" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700">Hantar</button>
+                        </form>
+                    </div>
+
+                    <!-- RETURN -->
+                    <div id="loan-tab-return" class="loan-tab-content hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                            <h5 class="text-lg font-bold text-gray-800 mb-2">Pulangkan Peranti</h5>
+                            <select id="returnSelect" class="w-full max-w-md mx-auto px-3 py-2 border rounded-lg mb-4"><option value="" disabled selected>Pilih Peranti...</option></select>
+                            <button type="button" onclick="Loan.submitReturn()" class="bg-green-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-green-700">Sahkan Pulangan</button>
+                        </div>
+                    </div>
+
+                    <!-- ADMIN -->
+                    <div id="loan-tab-admin" class="loan-tab-content hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                            <div class="space-y-6">
+                                <button onclick="Loan.checkOverdueLoans()" class="w-full bg-orange-600 text-white px-4 py-2 rounded text-sm hover:bg-orange-700 flex items-center justify-center gap-2"><i data-lucide="bell-ring"></i> Semak Lewat & Hantar Emel</button>
+                                <div class="border p-4 rounded-lg bg-gray-50">
+                                    <h6 class="font-bold mb-3 border-b pb-2">Tambah Pengguna</h6>
+                                    <input id="newUserName" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Nama Penuh">
+                                    <input id="newUserEmail" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Alamat Emel">
+                                    <button onclick="Loan.addUser()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800">Tambah</button>
+                                </div>
+                                <div class="border p-4 rounded-lg bg-gray-50">
+                                    <h6 class="font-bold mb-3 border-b pb-2">Tambah Peranti</h6>
+                                    <input id="newTag" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="Tag Aset">
+                                    <select id="newType" class="w-full px-3 py-2 border rounded-lg mb-2"><option>Notebook</option><option>Projector</option><option>HDMI Cable</option></select>
+                                    <input id="newSerial" class="w-full px-3 py-2 border rounded-lg mb-2" placeholder="No. Siri">
+                                    <button onclick="Loan.addDevice()" class="w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-800">Tambah</button>
+                                </div>
+                            </div>
+                            <div class="border p-4 rounded-lg bg-white h-full">
+                                <h6 class="font-bold mb-3 border-b pb-2">Senarai Pinjaman Aktif</h6>
+                                <div class="table-container"><table class="min-w-full text-xs"><thead class="bg-gray-100"><tr><th class="p-2 text-left">Peminjam</th><th class="p-2 text-left">Peranti</th><th class="p-2 text-left">Tamat</th></tr></thead><tbody id="active-loans-body"></tbody></table></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HISTORY -->
+                    <div id="loan-tab-history" class="loan-tab-content hidden">
+                        <div class="table-container border rounded-lg">
+                            <table class="min-w-full text-xs">
+                                <thead class="bg-gray-100 text-gray-700"><tr><th class="p-3 text-left">Tarikh</th><th class="p-3 text-left">Peminjam</th><th class="p-3 text-left">Peranti</th><th class="p-3 text-left">Tempoh</th><th class="p-3 text-left">Status</th></tr></thead>
+                                <tbody id="loan-history-body" class="bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -287,13 +351,8 @@
                 Utils.log("Checking Auth..."); 
                 try {
                     const { data: { session } } = await sbClient.auth.getSession();
-                    if (session) { 
-                        Utils.log("Session found for " + session.user.email);
-                        Auth.handleLoginSuccess(session.user); 
-                    } else { 
-                        Utils.log("No session. Ready for login.");
-                        document.getElementById('login-page').classList.remove('hidden'); 
-                    }
+                    if (session) { Auth.handleLoginSuccess(session.user); } 
+                    else { document.getElementById('login-page').classList.remove('hidden'); }
                 } catch (e) { Utils.log("Auth init failed."); }
             },
             login: async (e) => {
@@ -321,7 +380,6 @@
                 document.getElementById('app-layout').classList.remove('hidden-section'); 
                 document.getElementById('user-display').innerText = user.email; 
                 Navigation.switchMainTab('call-log');
-                // Trigger form options fetch only AFTER we are logged in
                 CallLog.init(); 
             },
             logout: async () => { await sbClient.auth.signOut(); window.location.reload(); }
@@ -349,39 +407,23 @@
             options: { komunikasi: [], sistem: [], perkara: [] },
 
             init: async () => {
-                // Guard: Don't run if user is not logged in (prevents "isu table empty" error on login page)
                 if (!STATE.currentUser) return;
-
                 const defaults = {
                     komunikasi: ["Email", "Call", "WhatsApp", "Walk-in"],
                     sistem: ["Portal", "ECP450", "ECP400", "HCP400", "SOLMAN", "PSA400", "BP1", "BWP"],
                     perkara: ["ID Lock", "Masalah Role", "System Error", "Lain-lain"]
                 };
-                
                 try {
-                    Utils.log("Fetching live options from 'isu'...");
-                    const { data, error } = await sbClient.from('isu').select('*');
-                    
-                    if (error) {
-                        Utils.log("Table Access Error: " + error.message);
-                        CallLog.options = defaults;
-                    } else if (data && data.length > 0) {
+                    const { data } = await sbClient.from('isu').select('*');
+                    if (data && data.length > 0) {
                         const k = [...new Set(data.map(i => i.komunikasi).filter(Boolean))];
                         const s = [...new Set(data.map(i => i.sistem).filter(Boolean))];
                         const p = [...new Set(data.map(i => i.perkara).filter(Boolean))];
-                        
                         CallLog.options.komunikasi = k.length ? k : defaults.komunikasi;
                         CallLog.options.sistem = s.length ? s : defaults.sistem;
                         CallLog.options.perkara = p.length ? p : defaults.perkara;
-                        Utils.log("Table data synchronized.");
-                    } else {
-                        CallLog.options = defaults;
-                        Utils.log("Table 'isu' is empty. Defaults used.");
-                    }
-                } catch (e) {
-                    CallLog.options = defaults;
-                    Utils.log("Fetch failed.");
-                }
+                    } else { CallLog.options = defaults; }
+                } catch (e) { CallLog.options = defaults; }
                 CallLog.renderOptions();
             },
 
@@ -393,7 +435,6 @@
                     label.querySelector('input').onchange = CallLog.checkValidity; 
                     conK.appendChild(label);
                 });
-
                 const conS = document.getElementById('container-sistem'); conS.innerHTML = '';
                 CallLog.options.sistem.forEach(s => {
                     const label = document.createElement('label'); label.className = "flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-blue-50 text-sm";
@@ -401,13 +442,11 @@
                     label.querySelector('input').onchange = CallLog.checkValidity;
                     conS.appendChild(label);
                 });
-
                 const selP = document.getElementById('issue-dropdown'); 
                 selP.innerHTML = '<option value="" disabled selected>Sila Pilih...</option>';
                 CallLog.options.perkara.forEach(p => { 
                     const opt = document.createElement('option'); 
-                    opt.value = p; opt.text = p; 
-                    selP.appendChild(opt); 
+                    opt.value = p; opt.text = p; selP.appendChild(opt); 
                 });
                 selP.onchange = CallLog.checkValidity;
             },
@@ -425,12 +464,7 @@
                     if(val) {
                         const payload = {}; payload[type] = val;
                         const { error } = await sbClient.from('isu').insert([payload]);
-                        if(error) alert("Error: " + error.message);
-                        else { 
-                            Utils.showToast("Added successfully!"); e.target.value = ''; 
-                            document.getElementById('add-input-'+type).classList.add('hidden');
-                            CallLog.init(); 
-                        }
+                        if(!error) { Utils.showToast("Berjaya!"); e.target.value = ''; document.getElementById('add-input-'+type).classList.add('hidden'); CallLog.init(); }
                     }
                 }
             },
@@ -439,16 +473,16 @@
                 const dd = document.getElementById('search-results-dropdown'); if (STATE.searchTimeout) clearTimeout(STATE.searchTimeout);
                 if (!query || query.length < 2) { dd.classList.add('hidden'); return; }
                 STATE.searchTimeout = setTimeout(async () => {
-                    dd.classList.remove('hidden'); dd.innerHTML = '<div class="p-2 text-center text-xs">Searching...</div>';
+                    dd.classList.remove('hidden'); dd.innerHTML = '<div class="p-2 text-center text-xs">Cari...</div>';
                     const { data } = await sbClient.from('personnel').select('*').or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%,kod_ptj.ilike.%${query}%`).limit(5);
                     dd.innerHTML = '';
                     if (!data || data.length === 0) { 
                         const item = document.createElement('div'); item.className = "p-3 hover:bg-green-50 text-green-700 cursor-pointer text-sm font-bold border-b"; 
-                        item.innerHTML = `+ Add "${query}" as New Record?`; item.onclick = () => CallLog.prepareNewUser(query); dd.appendChild(item); return; 
+                        item.innerHTML = `+ Tambah "${query}"?`; item.onclick = () => CallLog.prepareNewUser(query); dd.appendChild(item); return; 
                     }
                     data.forEach(p => { 
                         const item = document.createElement('div'); item.className = "p-3 hover:bg-blue-50 cursor-pointer border-b"; 
-                        item.innerHTML = `<div class="font-bold text-sm">${p.nama}</div><div class="text-xs text-gray-500">${p.ic_number} | ${p.department}</div>`; 
+                        item.innerHTML = `<div class="font-bold text-sm">${p.nama}</div><div class="text-xs text-gray-500">${p.ic_number}</div>`; 
                         item.onclick = () => CallLog.fillForm(p); dd.appendChild(item); 
                     });
                 }, 300);
@@ -468,12 +502,12 @@
                 const payload = { ic_number: document.getElementById('ic').value, nama: document.getElementById('nama').value, kod_ptj: document.getElementById('kod_ptj').value, department: document.getElementById('department').value, emel: document.getElementById('emel').value, telefon: document.getElementById('telefon').value, gred: document.getElementById('gred').value };
                 const { data: exist } = await sbClient.from('personnel').select('id').eq('ic_number', payload.ic_number).maybeSingle();
                 const { error } = exist ? await sbClient.from('personnel').update(payload).eq('ic_number', payload.ic_number) : await sbClient.from('personnel').insert([payload]);
-                if(!error) { Utils.showToast("Data Updated!"); document.getElementById('btn-update-master').classList.add('hidden'); }
+                if(!error) { Utils.showToast("Master Data OK!"); document.getElementById('btn-update-master').classList.add('hidden'); }
             },
             submit: async (e) => { 
-                e.preventDefault(); if(!STATE.currentUser) return alert("Session expired."); 
+                e.preventDefault(); if(!STATE.currentUser) return; 
                 const btn = document.getElementById('submit-btn'); const btnText = btn.querySelector('span');
-                btn.disabled = true; btnText.innerText = "Saving...";
+                btn.disabled = true; btnText.innerText = "Simpan...";
                 try {
                     const system = document.querySelector('input[name="system_type"]:checked').value;
                     const komunikasi = document.querySelector('input[name="komunikasi"]:checked').value;
@@ -484,57 +518,235 @@
                     }; 
                     const { error } = await sbClient.from('rekod').insert([logEntry]); 
                     if (error) throw error;
-                    CallLog.updateMasterData(); Utils.showToast("Success!"); document.getElementById('data-form').reset(); CallLog.checkValidity();
+                    CallLog.updateMasterData(); Utils.showToast("Berjaya!"); document.getElementById('data-form').reset(); CallLog.checkValidity();
                 } catch (err) { alert("Error: " + err.message); } finally { btn.disabled = false; btnText.innerText = "Hantar Rekod"; }
             }
         };
 
         const Records = {
-            init: () => { Records.renderHeader(); Records.fetch(); },
+            userMap: {},
+            currentRecords: [],
+            // RESTORED: Column configuration with "Dikemaskini" columns
+            columns: [
+                { id: 'created_at', label: 'Tarikh Event' },
+                { id: 'nama_ic', label: 'Nama / IC' },
+                { id: 'department', label: 'Jabatan' },
+                { id: 'komunikasi', label: 'Komunikasi' },
+                { id: 'sistem', label: 'Sistem' },
+                { id: 'perkara', label: 'Perkara/Masalah' },
+                { id: 'perekod', label: 'Direkod Oleh' },
+                { id: 'updated_at', label: 'Dikemaskini Pada' },
+                { id: 'updated_by', label: 'Dikemaskini Oleh' },
+                { id: 'status', label: 'Status Selesai' }
+            ],
+
+            init: () => {
+                Records.renderHeader();
+                Records.fetch();
+            },
+
             renderHeader: () => {
-                const thead = document.getElementById('records-table-head'); thead.innerHTML = '';
+                const thead = document.getElementById('records-table-head');
+                thead.innerHTML = '';
                 const tr = document.createElement('tr');
-                ['Tarikh', 'Nama/IC', 'Sistem', 'Masalah', 'Perekod', 'Status'].forEach(txt => {
-                    const th = document.createElement('th'); th.className = "p-3 text-left border-b"; th.innerText = txt; tr.appendChild(th);
+                
+                Records.columns.forEach((col, index) => {
+                    const th = document.createElement('th');
+                    th.className = "p-3 text-left draggable-header select-none border-r border-gray-200 last:border-0 text-xs";
+                    th.draggable = true;
+                    th.dataset.index = index;
+                    
+                    const span = document.createElement('span');
+                    span.contentEditable = true;
+                    span.innerText = col.label;
+                    span.className = "cursor-text focus:cursor-text w-full block";
+                    span.onblur = (e) => { Records.columns[index].label = e.target.innerText; };
+                    span.onmousedown = (e) => e.stopPropagation(); 
+                    th.appendChild(span);
+
+                    th.addEventListener('dragstart', Records.handleDragStart);
+                    th.addEventListener('dragover', Records.handleDragOver);
+                    th.addEventListener('dragleave', Records.handleDragLeave);
+                    th.addEventListener('drop', Records.handleDrop);
+                    tr.appendChild(th);
                 });
                 thead.appendChild(tr);
             },
+
+            dragSrcIndex: null,
+            handleDragStart: (e) => {
+                Records.dragSrcIndex = e.target.closest('th').dataset.index;
+                e.dataTransfer.effectAllowed = 'move';
+                e.target.style.opacity = '0.4';
+            },
+            handleDragOver: (e) => {
+                if (e.preventDefault) e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const th = e.target.closest('th');
+                if (th) th.classList.add('drag-over');
+                return false;
+            },
+            handleDragLeave: (e) => {
+                const th = e.target.closest('th');
+                if (th) th.classList.remove('drag-over');
+            },
+            handleDrop: (e) => {
+                if (e.stopPropagation) e.stopPropagation();
+                const th = e.target.closest('th');
+                if (!th) return;
+                th.classList.remove('drag-over');
+                document.querySelectorAll('.draggable-header').forEach(el => el.style.opacity = '1');
+                const dragIndex = parseInt(Records.dragSrcIndex);
+                const dropIndex = parseInt(th.dataset.index);
+                if (dragIndex !== dropIndex) {
+                    const item = Records.columns.splice(dragIndex, 1)[0];
+                    Records.columns.splice(dropIndex, 0, item);
+                    Records.renderHeader();
+                    Records.renderBody(); 
+                }
+                return false;
+            },
+
             fetch: async () => {
-                const tbody = document.getElementById('records-table-body'); tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center"><div class="loader"></div></td></tr>';
-                const { data } = await sbClient.from('rekod').select('*').order('created_at', { ascending: false }).limit(50);
+                const tbody = document.getElementById('records-table-body'); 
+                tbody.innerHTML = '<tr><td colspan="100%" class="text-center p-4"><div class="loader"></div></td></tr>';
+                try {
+                    const [ { data: records }, { data: users } ] = await Promise.all([ 
+                        sbClient.from('rekod').select('*').order('created_at', { ascending: false }).limit(100), 
+                        sbClient.from('user_ba').select('name, emel') 
+                    ]);
+                    if(users) users.forEach(u => { if(u.emel) Records.userMap[u.emel.toLowerCase()] = u.name; });
+                    Records.currentRecords = records || [];
+                    Records.renderBody();
+                } catch (e) { tbody.innerHTML = `<tr><td colspan="100%" class="p-4">Error: ${e.message}</td></tr>`; }
+            },
+
+            renderBody: () => {
+                const tbody = document.getElementById('records-table-body');
                 tbody.innerHTML = '';
-                if(!data || !data.length) { tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center">No records.</td></tr>'; return; }
-                data.forEach(r => {
-                    const tr = document.createElement('tr'); tr.className = "border-b hover:bg-gray-50";
-                    tr.innerHTML = `<td class="p-3 text-xs">${Utils.formatDate(r.created_at)}</td><td class="p-3"><div class="font-bold">${r.nama}</div><div class="text-xs">${r.ic_number}</div></td><td class="p-3 text-xs">${r.sistem}</td><td class="p-3 text-xs">${r.perkara}</td><td class="p-3 text-xs">${r.perekod.split('@')[0]}</td><td class="p-3"><select onchange="Records.updateStatus('${r.id}', this.value)" class="text-xs border rounded p-1 ${r.confirmation==='YA'?'bg-green-100':'bg-red-100'}"><option value="YA" ${r.confirmation==='YA'?'selected':''}>YA</option><option value="TIDAK" ${r.confirmation!=='YA'?'selected':''}>TIDAK</option></select></td>`;
+                if(!Records.currentRecords.length) { tbody.innerHTML = '<tr><td colspan="100%" class="text-center p-4">Tiada rekod.</td></tr>'; return; }
+
+                Records.currentRecords.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-gray-50 align-top";
+
+                    Records.columns.forEach(col => {
+                        const td = document.createElement('td');
+                        td.className = "p-3";
+                        switch(col.id) {
+                            case 'created_at': td.className += " text-xs"; td.innerText = Utils.formatDate(r.created_at); break;
+                            case 'nama_ic': td.innerHTML = `<div class="font-bold text-gray-800 text-xs">${r.nama}</div><div class="text-[10px] text-gray-500">${r.ic_number}</div>`; break;
+                            case 'department': td.className += " text-[10px] max-w-[150px] truncate"; td.innerText = r.department; break;
+                            case 'komunikasi':
+                                const selectKom = document.createElement('select');
+                                selectKom.className = "border rounded px-2 py-1 text-[10px] bg-white text-blue-700 w-full";
+                                const komOpts = CallLog.options.komunikasi.length ? CallLog.options.komunikasi : ["Email", "Call", "WhatsApp", "Walk-in"];
+                                komOpts.forEach(opt => {
+                                    const option = document.createElement('option');
+                                    option.value = opt; option.text = opt;
+                                    if(opt === r.komunikasi) option.selected = true;
+                                    selectKom.appendChild(option);
+                                });
+                                selectKom.onchange = (e) => Records.updateField(r.id, 'komunikasi', e.target.value);
+                                td.appendChild(selectKom);
+                                break;
+                            case 'sistem': td.className += " text-[10px] font-bold text-gray-600"; td.innerText = r.sistem || '-'; break;
+                            case 'perkara': td.className += " text-[10px]"; td.innerText = r.perkara || '-'; break;
+                            case 'perekod': td.className += " text-[10px] font-medium text-gray-700"; td.innerText = r.perekod ? (Records.userMap[r.perekod.toLowerCase()] || r.perekod.split('@')[0]) : '-'; break;
+                            case 'updated_at': td.className += " text-[10px] text-gray-500"; td.innerText = r.status_updated_at ? Utils.formatDate(r.status_updated_at) : '-'; break;
+                            case 'updated_by': td.className += " text-[10px] text-blue-700 font-medium"; td.innerText = r.status_updated_by ? (Records.userMap[r.status_updated_by.toLowerCase()] || r.status_updated_by.split('@')[0]) : '-'; break;
+                            case 'status':
+                                const selectStatus = document.createElement('select');
+                                selectStatus.className = `border rounded px-2 py-1 text-[10px] font-bold ${r.confirmation === 'YA' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} w-full`;
+                                selectStatus.innerHTML = `<option value="YA" ${r.confirmation === 'YA' ? 'selected' : ''}>YA</option><option value="TIDAK" ${r.confirmation !== 'YA' ? 'selected' : ''}>TIDAK</option>`;
+                                selectStatus.onchange = (e) => Records.updateField(r.id, 'confirmation', e.target.value);
+                                td.appendChild(selectStatus);
+                                break;
+                            default: td.innerText = '-';
+                        }
+                        tr.appendChild(td);
+                    });
                     tbody.appendChild(tr);
                 });
             },
-            updateStatus: async (id, val) => {
-                await sbClient.from('rekod').update({ confirmation: val, status_updated_at: new Date(), status_updated_by: STATE.currentUser.email }).eq('id', id);
-                Utils.showToast("Updated"); Records.fetch();
+
+            updateField: async (id, field, val) => {
+                if(!STATE.currentUser) return;
+                const updateData = {}; updateData[field] = val;
+                if(field === 'confirmation') { updateData.status_updated_at = new Date(); updateData.status_updated_by = STATE.currentUser.email; }
+                const { error } = await sbClient.from('rekod').update(updateData).eq('id', id);
+                if(!error) { Utils.showToast("Dikemaskini"); Records.fetch(); }
             }
         };
 
         const Loan = {
+            currentHistory: [],
+            deviceMap: {},
+            switchTab: (id) => {
+                document.querySelectorAll('.loan-tab-content').forEach(e => e.classList.add('hidden')); 
+                document.getElementById('loan-tab-'+id).classList.remove('hidden');
+                ['borrow','return','admin','history'].forEach(t => { 
+                    const btn = document.getElementById('btn-loan-'+t); 
+                    if(t===id) { btn.classList.add('tab-active-sub'); btn.classList.remove('tab-inactive-sub'); } 
+                    else { btn.classList.add('tab-inactive-sub'); btn.classList.remove('tab-active-sub'); } 
+                });
+                if(id === 'borrow') { const today = new Date().toISOString().split('T')[0]; document.getElementById('loanStartDate').value = today; document.getElementById('loanEndDate').value = today; }
+                if(id === 'history') Loan.loadHistory();
+            },
             loadData: async () => {
-                const { data: u } = await sbClient.from('user_ba').select('name').order('name'); const ul = document.getElementById('userList'); ul.innerHTML = ''; if(u) u.forEach(i => ul.appendChild(new Option(i.name, i.name)));
-                const { data: d } = await sbClient.from('device_inventory').select('*').eq('status','Tersedia'); const ds = document.getElementById('deviceSelect'); ds.innerHTML = '<option disabled selected>Select Device...</option>'; if(d) d.forEach(i => ds.appendChild(new Option(i.tag, i.tag)));
+                const { data: u } = await sbClient.from('user_ba').select('name').order('name'); 
+                const ul = document.getElementById('userList'); ul.innerHTML = ''; 
+                if(u) u.forEach(i => ul.appendChild(new Option(i.name, i.name)));
+                
+                const { data: d } = await sbClient.from('device_inventory').select('*').eq('status','Tersedia'); 
+                const ds = document.getElementById('deviceSelect'); ds.innerHTML = '<option disabled selected>Select Device...</option>'; 
+                if(d) d.forEach(i => ds.appendChild(new Option(i.tag, i.tag)));
+                
+                const { data: r } = await sbClient.from('device_inventory').select('*').eq('status','Dipinjam'); 
+                const rs = document.getElementById('returnSelect'); rs.innerHTML = '<option disabled selected>Pilih Peranti...</option>'; 
+                if(r) r.forEach(i => rs.appendChild(new Option(i.tag, i.tag)));
+
                 Loan.loadActive();
             },
             loadActive: async () => {
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
                 const tb = document.getElementById('active-loans-body'); tb.innerHTML = '';
-                if(data) data.forEach(l => { tb.innerHTML += `<tr class="border-b"><td class="p-2">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2">${l.end_date}</td></tr>`; });
+                if(data) data.forEach(l => { tb.innerHTML += `<tr class="border-b"><td class="p-2">${l.user_name}</td><td class="p-2 font-bold">${l.device_tag}</td><td class="p-2">${l.end_date}</td></tr>`; });
             },
-            switchTab: (id) => {
-                document.querySelectorAll('.loan-tab-content').forEach(e => e.classList.add('hidden')); document.getElementById('loan-tab-'+id).classList.remove('hidden');
-                if(id==='history') Loan.loadHistory();
+            submit: async () => {
+                const u = document.getElementById('loanUserName').value, d = document.getElementById('deviceSelect').value, s = document.getElementById('loanStartDate').value, e = document.getElementById('loanEndDate').value;
+                if(!u || !d || !s || !e) return alert("Isi semua info.");
+                const { error } = await sbClient.from('rekod_pinjaman').insert([{ user_name: u, device_tag: d, start_date: s, end_date: e, usage_type: document.getElementById('usageType').value, usage_details: document.getElementById('usageDetails').value, status: 'Active', issued_by: STATE.currentUser.email }]);
+                if(!error) { await sbClient.from('device_inventory').update({status:'Dipinjam'}).eq('tag', d); Utils.showToast("Berjaya Pinjam!"); Loan.loadData(); document.getElementById('loanForm').reset(); }
+            },
+            submitReturn: async () => {
+                const t = document.getElementById('returnSelect').value; if(!t) return;
+                const { data } = await sbClient.from('rekod_pinjaman').select('id').eq('device_tag', t).eq('status','Active').maybeSingle();
+                if(data) { await sbClient.from('rekod_pinjaman').update({ status: 'Returned', return_date: new Date(), received_by: STATE.currentUser.email }).eq('id', data.id); await sbClient.from('device_inventory').update({status:'Tersedia'}).eq('tag', t); Utils.showToast("Dipulangkan!"); Loan.loadData(); }
             },
             loadHistory: async () => {
-                const tb = document.getElementById('loan-history-body'); tb.innerHTML = '';
+                const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="5" class="text-center p-4">Loading...</td></tr>';
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
-                if(data) data.forEach(l => { tb.innerHTML += `<tr class="border-b"><td class="p-2 text-xs">${Utils.formatDate(l.created_at)}</td><td class="p-2 font-bold">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2 text-xs">${l.start_date} - ${l.end_date}</td><td class="p-2 text-xs">${l.status}</td></tr>`; });
+                tb.innerHTML = '';
+                if(data) data.forEach(l => { tb.innerHTML += `<tr class="border-b text-xs"><td class="p-2">${Utils.formatDate(l.created_at)}</td><td class="p-2 font-bold">${l.user_name}</td><td class="p-2 text-blue-600">${l.device_tag}</td><td class="p-2">${l.start_date} - ${l.end_date}</td><td class="p-2 font-medium">${l.status}</td></tr>`; });
+            },
+            checkOverdueLoans: async () => {
+                const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
+                const today = new Date().toISOString().split('T')[0];
+                const overdue = data.filter(l => l.end_date < today);
+                const tb = document.getElementById('overdue-list-body'); tb.innerHTML = '';
+                if(overdue.length) {
+                    overdue.forEach(l => { tb.innerHTML += `<tr class="border-b"><td>${l.user_name}</td><td>${l.device_tag}</td><td class="text-red-600">${l.end_date}</td><td class="text-center"><button class="bg-orange-500 text-white px-2 py-1 rounded">Email</button></td></tr>`; });
+                    document.getElementById('overdue-modal').classList.remove('hidden');
+                } else { Utils.showToast("Tiada barang lewat."); }
+            },
+            addUser: async () => { 
+                const n = document.getElementById('newUserName').value; 
+                if(n) { await sbClient.from('user_ba').insert([{name:n}]); Loan.loadData(); document.getElementById('newUserName').value=''; } 
+            },
+            addDevice: async () => { 
+                const t = document.getElementById('newTag').value, tp = document.getElementById('newType').value, s = document.getElementById('newSerial').value;
+                if(t) { await sbClient.from('device_inventory').insert([{tag:t, type:tp, serial:s, status:'Tersedia'}]); Loan.loadData(); document.getElementById('newTag').value=''; }
             }
         };
 
@@ -544,7 +756,6 @@
             document.getElementById('login-form').addEventListener('submit', Auth.login);
             document.getElementById('global-search').addEventListener('input', (e) => CallLog.handleSearch(e.target.value));
             document.getElementById('data-form').addEventListener('submit', CallLog.submit);
-            // REMOVED CallLog.init() from here. Initialization is now handled inside Auth flow.
         });
     </script>
 </body>
