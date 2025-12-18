@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod IT (v16 - Updated History)</title>
+    <title>Sistem Rekod IT (v19 - Remove Serial Column)</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -307,14 +307,19 @@
 
                     <!-- HISTORY -->
                     <div id="loan-tab-history" class="loan-tab-content hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h6 class="font-bold text-gray-800">Log Sejarah Pinjaman</h6>
+                            <button onclick="Loan.exportExcel()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs flex items-center gap-2">
+                                <i data-lucide="sheet" class="w-4 h-4"></i> Export Excel
+                            </button>
+                        </div>
                         <div class="table-container border rounded-lg">
                             <table class="min-w-full text-[10px] md:text-xs">
                                 <thead class="bg-gray-100 text-gray-700 uppercase font-semibold">
                                     <tr>
-                                        <th class="p-3 text-left border-b">Tarikh</th>
+                                        <th class="p-3 text-left border-b">Tarikh Pinjam</th>
                                         <th class="p-3 text-left border-b">Peminjam</th>
-                                        <th class="p-3 text-left border-b">Peranti</th>
-                                        <th class="p-3 text-left border-b">Nombor Siri</th>
+                                        <th class="p-3 text-left border-b">Tag Aset</th>
                                         <th class="p-3 text-left border-b">Tempoh</th>
                                         <th class="p-3 text-left border-b">Pegawai Pengeluar</th>
                                         <th class="p-3 text-left border-b">Pegawai Penerima</th>
@@ -355,7 +360,8 @@
             log: (msg) => { const c = document.getElementById('debug-console'); if(c) { c.appendChild(document.createElement('div')).innerText = `> ${msg}`; c.scrollTop = c.scrollHeight; } },
             showToast: (msg) => { const t = document.getElementById('toast'); t.innerText = msg; t.classList.remove('opacity-0', 'translate-y-20'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000); },
             enableField: (id) => { const el = document.getElementById(id); if(el) { el.readOnly = false; el.classList.remove('bg-gray-50'); el.classList.add('bg-white', 'ring-2', 'ring-blue-100'); el.focus(); document.getElementById('btn-update-master').classList.remove('hidden'); } },
-            formatDate: (dateStr) => { if(!dateStr) return '-'; return new Date(dateStr).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+            formatDate: (dateStr) => { if(!dateStr) return '-'; return new Date(dateStr).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); },
+            getLocalToday: () => { const now = new Date(); const offset = now.getTimezoneOffset() * 60000; return new Date(now.getTime() - offset).toISOString().split('T')[0]; }
         };
 
         const Auth = {
@@ -622,6 +628,26 @@
                 if(field === 'confirmation') { updateData.status_updated_at = new Date(); updateData.status_updated_by = STATE.currentUser.email; }
                 const { error } = await sbClient.from('rekod').update(updateData).eq('id', id);
                 if(!error) { Utils.showToast("Dikemaskini"); Records.fetch(); }
+            },
+            exportExcel: () => {
+                if(!Records.currentRecords.length) return alert("Tiada rekod untuk dieksport.");
+                const exportData = Records.currentRecords.map(r => {
+                    const row = {};
+                    Records.columns.forEach(col => {
+                        if(col.id === 'created_at') row[col.label] = Utils.formatDate(r.created_at);
+                        else if(col.id === 'nama_ic') row[col.label] = `${r.nama} (${r.ic_number})`;
+                        else if(col.id === 'updated_at') row[col.label] = r.status_updated_at ? Utils.formatDate(r.status_updated_at) : '-';
+                        else if(col.id === 'updated_by') row[col.label] = r.status_updated_by ? (Records.userMap[r.status_updated_by.toLowerCase()] || r.status_updated_by) : '-';
+                        else if(col.id === 'perekod') row[col.label] = r.perekod ? (Records.userMap[r.perekod.toLowerCase()] || r.perekod) : '-';
+                        else if(col.id === 'status') row[col.label] = r.confirmation;
+                        else row[col.label] = r[col.id] || '-';
+                    });
+                    return row;
+                });
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Rekod Call Log");
+                XLSX.writeFile(wb, `Call_Log_Rekod_${new Date().toISOString().split('T')[0]}.xlsx`);
             }
         };
 
@@ -636,12 +662,23 @@
                     if(t===id) { btn.classList.add('tab-active-sub'); btn.classList.remove('tab-inactive-sub'); } 
                     else { btn.classList.add('tab-inactive-sub'); btn.classList.remove('tab-active-sub'); } 
                 });
-                const today = new Date().toISOString().split('T')[0];
+                
+                const today = Utils.getLocalToday();
+                
                 if(id === 'borrow') { 
-                    document.getElementById('loanStartDate').min = today; 
-                    document.getElementById('loanStartDate').value = today;
-                    document.getElementById('loanEndDate').min = today;
-                    document.getElementById('loanEndDate').value = today;
+                    const s_in = document.getElementById('loanStartDate');
+                    const e_in = document.getElementById('loanEndDate');
+                    
+                    s_in.min = today; 
+                    if(!s_in.value || s_in.value < today) s_in.value = today;
+                    
+                    e_in.min = s_in.value;
+                    if(!e_in.value || e_in.value < s_in.value) e_in.value = s_in.value;
+
+                    s_in.onchange = () => {
+                        e_in.min = s_in.value;
+                        if(e_in.value < s_in.value) e_in.value = s_in.value;
+                    };
                 }
                 if(id === 'history') Loan.loadHistory();
             },
@@ -653,9 +690,10 @@
                 const { data: d } = await sbClient.from('device_inventory').select('*').eq('status','Tersedia').order('tag', { ascending: true }); 
                 const ds = document.getElementById('deviceSelect'); ds.innerHTML = '<option disabled selected>Pilih Peranti...</option>'; 
                 if(d) d.forEach(i => {
-                    const label = `${i.tag} - ${i.type} (${i.serial || 'No Serial'})`;
+                    const s_val = i.serial || i.serial_number || 'No Serial';
+                    const label = `${i.tag} - ${i.type} (${s_val})`;
                     ds.appendChild(new Option(label, i.tag));
-                    Loan.deviceMap[i.tag] = i.serial || '-';
+                    Loan.deviceMap[i.tag] = s_val; 
                 });
                 
                 const { data: activeLoans } = await sbClient.from('rekod_pinjaman').select('device_tag, user_name').eq('status','Active');
@@ -669,7 +707,7 @@
             loadActive: async () => {
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
                 const tb = document.getElementById('active-loans-body'); tb.innerHTML = '';
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = Utils.getLocalToday();
                 if(data) data.forEach(l => { 
                     const isLate = l.end_date < todayStr;
                     tb.innerHTML += `<tr class="border-b ${isLate ? 'bg-red-50 text-red-700 font-bold' : ''}"><td class="p-2">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2">${l.end_date}</td></tr>`; 
@@ -682,18 +720,15 @@
                 const e = document.getElementById('loanEndDate').value;
                 if(!u || !d || !s || !e) return alert("Sila isi semua maklumat.");
 
-                const today = new Date().toISOString().split('T')[0];
+                const today = Utils.getLocalToday();
                 if (s < today) return alert("Tarikh Mula tidak boleh sebelum tarikh hari ini.");
                 if (e < s) return alert("Tarikh Tamat tidak boleh sebelum Tarikh Mula.");
-
-                const serialVal = Loan.deviceMap[d] || '-';
 
                 const { error } = await sbClient.from('rekod_pinjaman').insert([{ 
                     user_name: u, device_tag: d, start_date: s, end_date: e, 
                     usage_type: document.getElementById('usageType').value, 
                     usage_details: document.getElementById('usageDetails').value, 
-                    status: 'Active', issued_by: STATE.currentUser.email,
-                    serial_number: serialVal // Menyimpan no siri ke dalam rekod pinjaman jika kolum wujud
+                    status: 'Active', issued_by: STATE.currentUser.email
                 }]);
                 if(!error) { 
                     await sbClient.from('device_inventory').update({status:'Dipinjam'}).eq('tag', d); 
@@ -710,34 +745,74 @@
                 }
             },
             loadHistory: async () => {
-                const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="9" class="text-center p-4">Sila tunggu...</td></tr>';
-                const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
-                tb.innerHTML = '';
-                if(data) data.forEach(l => { 
-                    const isLate = l.return_date && l.return_date.split('T')[0] > l.end_date;
-                    const rowClass = isLate ? 'text-red-600 font-bold bg-red-50' : 'text-gray-700';
-                    const serial = l.serial || '-';
-                    const pengeluar = l.issued_by ? (Records.userMap[l.issued_by.toLowerCase()] || l.issued_by.split('@')[0]) : '-';
-                    const penerima = l.received_by ? (Records.userMap[l.received_by.toLowerCase()] || l.received_by.split('@')[0]) : '-';
-                    const t_pulang = l.return_date ? Utils.formatDate(l.return_date) : '-';
+                const tb = document.getElementById('loan-history-body'); 
+                tb.innerHTML = '<tr><td colspan="8" class="text-center p-4">Sila tunggu...</td></tr>';
+                
+                try {
+                    const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
+                    tb.innerHTML = '';
+                    
+                    if(data) data.forEach(l => { 
+                        const isLate = l.return_date && l.return_date.split('T')[0] > l.end_date;
+                        const rowClass = isLate ? 'text-red-600 font-bold bg-red-50' : 'text-gray-700';
+                        
+                        const pengeluar = l.issued_by ? (Records.userMap[l.issued_by.toLowerCase()] || l.issued_by.split('@')[0]) : '-';
+                        const penerima = l.received_by ? (Records.userMap[l.received_by.toLowerCase()] || l.received_by.split('@')[0]) : '-';
+                        const t_pulang = l.return_date ? Utils.formatDate(l.return_date) : '-';
 
-                    tb.innerHTML += `
-                        <tr class="border-b ${rowClass}">
-                            <td class="p-3">${Utils.formatDate(l.created_at)}</td>
-                            <td class="p-3 font-bold">${l.user_name}</td>
-                            <td class="p-3 text-blue-600 font-medium">${l.device_tag}</td>
-                            <td class="p-3 text-gray-500 italic">${serial}</td>
-                            <td class="p-3">${l.start_date} - ${l.end_date}</td>
-                            <td class="p-3 text-gray-600">${pengeluar}</td>
-                            <td class="p-3 text-gray-600">${penerima}</td>
-                            <td class="p-3 font-medium text-green-700">${t_pulang}</td>
-                            <td class="p-3 uppercase font-semibold text-[9px]">${l.status}</td>
-                        </tr>`; 
-                });
+                        tb.innerHTML += `
+                            <tr class="border-b ${rowClass} hover:bg-gray-50">
+                                <td class="p-3">${Utils.formatDate(l.created_at)}</td>
+                                <td class="p-3 font-bold">${l.user_name}</td>
+                                <td class="p-3 text-blue-600 font-medium">${l.device_tag}</td>
+                                <td class="p-3">${l.start_date} - ${l.end_date}</td>
+                                <td class="p-3 text-gray-600">${pengeluar}</td>
+                                <td class="p-3 text-gray-600">${penerima}</td>
+                                <td class="p-3 font-medium text-green-700">${t_pulang}</td>
+                                <td class="p-3 uppercase font-semibold text-[9px]">${l.status}</td>
+                            </tr>`; 
+                    });
+                } catch (err) {
+                    tb.innerHTML = `<tr><td colspan="8" class="text-center p-4 text-red-500">Error: ${err.message}</td></tr>`;
+                }
+            },
+            exportExcel: async () => {
+                try {
+                    Utils.showToast("Menjana Excel...");
+                    const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
+                    if(!data || data.length === 0) return alert("Tiada data sejarah untuk dieksport.");
+
+                    const exportData = data.map(l => {
+                        const pengeluar = l.issued_by ? (Records.userMap[l.issued_by.toLowerCase()] || l.issued_by) : '-';
+                        const penerima = l.received_by ? (Records.userMap[l.received_by.toLowerCase()] || l.received_by) : '-';
+                        const t_pulang = l.return_date ? Utils.formatDate(l.return_date) : '-';
+
+                        return {
+                            'Tarikh Pinjam': Utils.formatDate(l.created_at),
+                            'Peminjam': l.user_name,
+                            'Tag Aset': l.device_tag,
+                            'Tarikh Mula': l.start_date,
+                            'Tarikh Tamat': l.end_date,
+                            'Pegawai Pengeluar': pengeluar,
+                            'Pegawai Penerima': penerima,
+                            'Tarikh Pulang': t_pulang,
+                            'Status': l.status,
+                            'Jenis Kegunaan': l.usage_type || '-',
+                            'Butiran': l.usage_details || '-'
+                        };
+                    });
+
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Sejarah Pinjaman ICT");
+                    XLSX.writeFile(wb, `Sejarah_Pinjaman_ICT_${new Date().toISOString().split('T')[0]}.xlsx`);
+                } catch (err) {
+                    alert("Gagal eksport: " + err.message);
+                }
             },
             checkOverdueLoans: async () => {
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
-                const today = new Date().toISOString().split('T')[0];
+                const today = Utils.getLocalToday();
                 const overdue = data.filter(l => l.end_date < today);
                 const tb = document.getElementById('overdue-list-body'); tb.innerHTML = '';
                 if(overdue.length) {
