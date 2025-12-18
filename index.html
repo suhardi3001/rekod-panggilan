@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod IT (Final v15 - Dynamic Table)</title>
+    <title>Sistem Rekod IT (v16 - Updated History)</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -308,8 +308,20 @@
                     <!-- HISTORY -->
                     <div id="loan-tab-history" class="loan-tab-content hidden">
                         <div class="table-container border rounded-lg">
-                            <table class="min-w-full text-xs">
-                                <thead class="bg-gray-100 text-gray-700"><tr><th class="p-3 text-left">Tarikh</th><th class="p-3 text-left">Peminjam</th><th class="p-3 text-left">Peranti</th><th class="p-3 text-left">Tempoh</th><th class="p-3 text-left">Status</th></tr></thead>
+                            <table class="min-w-full text-[10px] md:text-xs">
+                                <thead class="bg-gray-100 text-gray-700 uppercase font-semibold">
+                                    <tr>
+                                        <th class="p-3 text-left border-b">Tarikh</th>
+                                        <th class="p-3 text-left border-b">Peminjam</th>
+                                        <th class="p-3 text-left border-b">Peranti</th>
+                                        <th class="p-3 text-left border-b">Nombor Siri</th>
+                                        <th class="p-3 text-left border-b">Tempoh</th>
+                                        <th class="p-3 text-left border-b">Pegawai Pengeluar</th>
+                                        <th class="p-3 text-left border-b">Pegawai Penerima</th>
+                                        <th class="p-3 text-left border-b">Tarikh Pulang</th>
+                                        <th class="p-3 text-left border-b">Status</th>
+                                    </tr>
+                                </thead>
                                 <tbody id="loan-history-body" class="bg-white"></tbody>
                             </table>
                         </div>
@@ -634,20 +646,18 @@
                 if(id === 'history') Loan.loadHistory();
             },
             loadData: async () => {
-                // 1. Load Peminjam List
                 const { data: u } = await sbClient.from('user_ba').select('name').order('name'); 
                 const ul = document.getElementById('userList'); ul.innerHTML = ''; 
                 if(u) u.forEach(i => ul.appendChild(new Option(i.name, i.name)));
                 
-                // 2. Load Tersedia Devices (Sorted by Tag, Showing Tag-Type-Serial)
                 const { data: d } = await sbClient.from('device_inventory').select('*').eq('status','Tersedia').order('tag', { ascending: true }); 
                 const ds = document.getElementById('deviceSelect'); ds.innerHTML = '<option disabled selected>Pilih Peranti...</option>'; 
                 if(d) d.forEach(i => {
                     const label = `${i.tag} - ${i.type} (${i.serial || 'No Serial'})`;
                     ds.appendChild(new Option(label, i.tag));
+                    Loan.deviceMap[i.tag] = i.serial || '-';
                 });
                 
-                // 3. Load Dipinjam Devices with Loaned User Name for Return Dropdown
                 const { data: activeLoans } = await sbClient.from('rekod_pinjaman').select('device_tag, user_name').eq('status','Active');
                 const rs = document.getElementById('returnSelect'); rs.innerHTML = '<option disabled selected>Pilih Peranti & Peminjam...</option>'; 
                 if(activeLoans) activeLoans.forEach(l => {
@@ -661,7 +671,6 @@
                 const tb = document.getElementById('active-loans-body'); tb.innerHTML = '';
                 const todayStr = new Date().toISOString().split('T')[0];
                 if(data) data.forEach(l => { 
-                    // Highlight red if end_date is before today
                     const isLate = l.end_date < todayStr;
                     tb.innerHTML += `<tr class="border-b ${isLate ? 'bg-red-50 text-red-700 font-bold' : ''}"><td class="p-2">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2">${l.end_date}</td></tr>`; 
                 });
@@ -673,16 +682,18 @@
                 const e = document.getElementById('loanEndDate').value;
                 if(!u || !d || !s || !e) return alert("Sila isi semua maklumat.");
 
-                // Date Validation
                 const today = new Date().toISOString().split('T')[0];
                 if (s < today) return alert("Tarikh Mula tidak boleh sebelum tarikh hari ini.");
                 if (e < s) return alert("Tarikh Tamat tidak boleh sebelum Tarikh Mula.");
+
+                const serialVal = Loan.deviceMap[d] || '-';
 
                 const { error } = await sbClient.from('rekod_pinjaman').insert([{ 
                     user_name: u, device_tag: d, start_date: s, end_date: e, 
                     usage_type: document.getElementById('usageType').value, 
                     usage_details: document.getElementById('usageDetails').value, 
-                    status: 'Active', issued_by: STATE.currentUser.email 
+                    status: 'Active', issued_by: STATE.currentUser.email,
+                    serial_number: serialVal // Menyimpan no siri ke dalam rekod pinjaman jika kolum wujud
                 }]);
                 if(!error) { 
                     await sbClient.from('device_inventory').update({status:'Dipinjam'}).eq('tag', d); 
@@ -699,13 +710,29 @@
                 }
             },
             loadHistory: async () => {
-                const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="5" class="text-center p-4">Sila tunggu...</td></tr>';
+                const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="9" class="text-center p-4">Sila tunggu...</td></tr>';
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
                 tb.innerHTML = '';
                 if(data) data.forEach(l => { 
-                    // Highlight if return_date > end_date (next day late)
                     const isLate = l.return_date && l.return_date.split('T')[0] > l.end_date;
-                    tb.innerHTML += `<tr class="border-b text-xs ${isLate ? 'text-red-600 font-bold bg-red-50' : ''}"><td class="p-2">${Utils.formatDate(l.created_at)}</td><td class="p-2 font-bold">${l.user_name}</td><td class="p-2 text-blue-600">${l.device_tag}</td><td class="p-2">${l.start_date} - ${l.end_date}</td><td class="p-2 font-medium">${l.status}</td></tr>`; 
+                    const rowClass = isLate ? 'text-red-600 font-bold bg-red-50' : 'text-gray-700';
+                    const serial = l.serial || '-';
+                    const pengeluar = l.issued_by ? (Records.userMap[l.issued_by.toLowerCase()] || l.issued_by.split('@')[0]) : '-';
+                    const penerima = l.received_by ? (Records.userMap[l.received_by.toLowerCase()] || l.received_by.split('@')[0]) : '-';
+                    const t_pulang = l.return_date ? Utils.formatDate(l.return_date) : '-';
+
+                    tb.innerHTML += `
+                        <tr class="border-b ${rowClass}">
+                            <td class="p-3">${Utils.formatDate(l.created_at)}</td>
+                            <td class="p-3 font-bold">${l.user_name}</td>
+                            <td class="p-3 text-blue-600 font-medium">${l.device_tag}</td>
+                            <td class="p-3 text-gray-500 italic">${serial}</td>
+                            <td class="p-3">${l.start_date} - ${l.end_date}</td>
+                            <td class="p-3 text-gray-600">${pengeluar}</td>
+                            <td class="p-3 text-gray-600">${penerima}</td>
+                            <td class="p-3 font-medium text-green-700">${t_pulang}</td>
+                            <td class="p-3 uppercase font-semibold text-[9px]">${l.status}</td>
+                        </tr>`; 
                 });
             },
             checkOverdueLoans: async () => {
