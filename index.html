@@ -375,10 +375,21 @@
         const CONFIG = { supabaseUrl: 'https://objxfgosatmasjjifkkg.supabase.co', supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw' };
         const STATE = { currentUser: null, searchTimeout: null, baseFontSize: 16 };
         
-        let supabase; try { supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey); } catch (e) { console.error(e); }
+        let sbClient; 
+        try { 
+            sbClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            }); 
+        } catch (e) { 
+            console.error("Supabase Init Error:", e); 
+        }
 
         const Utils = {
-            log: (msg) => { const c = document.getElementById('debug-console'); c.appendChild(document.createElement('div')).innerText = `> ${msg}`; c.scrollTop = c.scrollHeight; },
+            log: (msg) => { const c = document.getElementById('debug-console'); if(c) { c.appendChild(document.createElement('div')).innerText = `> ${msg}`; c.scrollTop = c.scrollHeight; } },
             showToast: (msg) => { const t = document.getElementById('toast'); t.innerText = msg; t.classList.remove('opacity-0', 'translate-y-20'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-20'), 3000); },
             enableField: (id) => { const el = document.getElementById(id); if(el) { el.readOnly = false; el.classList.remove('bg-gray-50'); el.classList.add('bg-white', 'ring-2', 'ring-blue-100'); el.focus(); document.getElementById('btn-update-master').classList.remove('hidden'); } },
             formatDate: (dateStr) => { if(!dateStr) return '-'; return new Date(dateStr).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
@@ -386,17 +397,60 @@
 
         const Auth = {
             init: async () => {
-                Utils.log("Checking Auth..."); const { data: { session } } = await supabase.auth.getSession();
-                if (session) { Utils.log("Auth OK: " + session.user.email); Auth.handleLoginSuccess(session.user); } else { document.getElementById('login-page').classList.remove('hidden'); }
+                Utils.log("Checking Auth..."); 
+                try {
+                    const { data: { session }, error } = await sbClient.auth.getSession();
+                    if (session) { 
+                        Utils.log("Auth OK: " + session.user.email); 
+                        Auth.handleLoginSuccess(session.user); 
+                    } else { 
+                        Utils.log("No session found. Please login.");
+                        document.getElementById('login-page').classList.remove('hidden'); 
+                    }
+                } catch (e) {
+                    Utils.log("Auth check failed: " + e.message);
+                }
             },
             login: async (e) => {
-                e.preventDefault(); const btn = document.getElementById('login-btn'); btn.classList.add('loading');
-                const { data, error } = await supabase.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('password').value });
-                if (error) { btn.classList.remove('loading'); document.getElementById('login-error').innerText = error.message; document.getElementById('login-error').classList.remove('hidden'); }
-                else { setTimeout(() => { btn.classList.remove('loading'); btn.classList.add('success'); setTimeout(() => { Auth.handleLoginSuccess(data.user); btn.classList.remove('success'); }, 2000); }, 1500); }
+                e.preventDefault(); 
+                const btn = document.getElementById('login-btn'); 
+                const errorEl = document.getElementById('login-error');
+                btn.classList.add('loading');
+                errorEl.classList.add('hidden');
+
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+
+                try {
+                    const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+                    if (error) { 
+                        btn.classList.remove('loading'); 
+                        errorEl.innerText = error.message; 
+                        errorEl.classList.remove('hidden'); 
+                    } else { 
+                        setTimeout(() => { 
+                            btn.classList.remove('loading'); 
+                            btn.classList.add('success'); 
+                            setTimeout(() => { 
+                                Auth.handleLoginSuccess(data.user); 
+                                btn.classList.remove('success'); 
+                            }, 1000); 
+                        }, 1000); 
+                    }
+                } catch (err) {
+                    btn.classList.remove('loading');
+                    errorEl.innerText = "System error occurred.";
+                    errorEl.classList.remove('hidden');
+                }
             },
-            handleLoginSuccess: (user) => { STATE.currentUser = user; document.getElementById('login-page').classList.add('hidden-section'); document.getElementById('app-layout').classList.remove('hidden-section'); document.getElementById('user-display').innerText = user.email; Navigation.switchMainTab('call-log'); },
-            logout: async () => { await supabase.auth.signOut(); window.location.reload(); }
+            handleLoginSuccess: (user) => { 
+                STATE.currentUser = user; 
+                document.getElementById('login-page').classList.add('hidden-section'); 
+                document.getElementById('app-layout').classList.remove('hidden-section'); 
+                document.getElementById('user-display').innerText = user.email; 
+                Navigation.switchMainTab('call-log'); 
+            },
+            logout: async () => { await sbClient.auth.signOut(); window.location.reload(); }
         };
 
         const Navigation = {
@@ -419,27 +473,45 @@
         const CallLog = {
             options: { komunikasi: [], sistem: [], perkara: [] },
 
+            // REFINED: Load current options from the 'isu' table columns
             init: async () => {
                 const defaults = {
                     komunikasi: ["Email", "Call", "WhatsApp", "Walk-in"],
                     sistem: ["Portal", "ECP450", "ECP400", "HCP400", "SOLMAN", "PSA400", "BP1", "BWP"],
                     perkara: ["ID Lock", "Masalah Role", "System Error", "Lain-lain"]
                 };
+                
                 try {
-                    const { data, error } = await supabase.from('isu').select('*');
+                    Utils.log("Loading form options from table 'isu'...");
+                    const { data, error } = await sbClient.from('isu').select('*');
+                    
+                    if (error) throw error;
+
                     if (data && data.length > 0) {
+                        // Extract unique values from specific columns
                         const k = [...new Set(data.map(i => i.komunikasi).filter(Boolean))];
                         const s = [...new Set(data.map(i => i.sistem).filter(Boolean))];
                         const p = [...new Set(data.map(i => i.perkara).filter(Boolean))];
+                        
+                        // Merge with defaults or prioritize table data
                         CallLog.options.komunikasi = k.length ? k : defaults.komunikasi;
                         CallLog.options.sistem = s.length ? s : defaults.sistem;
                         CallLog.options.perkara = p.length ? p : defaults.perkara;
-                    } else { CallLog.options = defaults; }
-                } catch (e) { CallLog.options = defaults; }
+                        
+                        Utils.log(`Options Loaded: ${k.length} Kom, ${s.length} Sys, ${p.length} Perkara.`);
+                    } else { 
+                        CallLog.options = defaults; 
+                        Utils.log("No data in 'isu' table, using system defaults.");
+                    }
+                } catch (e) { 
+                    Utils.log("Error loading options: " + e.message);
+                    CallLog.options = defaults; 
+                }
                 CallLog.renderOptions();
             },
 
             renderOptions: () => {
+                // Render Medium Komunikasi Radio Buttons
                 const conK = document.getElementById('container-komunikasi'); conK.innerHTML = '';
                 CallLog.options.komunikasi.forEach(k => {
                     const label = document.createElement('label'); label.className = "flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-blue-50 text-sm";
@@ -447,6 +519,8 @@
                     label.querySelector('input').onchange = CallLog.checkValidity; 
                     conK.appendChild(label);
                 });
+
+                // Render Sistem Radio Buttons
                 const conS = document.getElementById('container-sistem'); conS.innerHTML = '';
                 CallLog.options.sistem.forEach(s => {
                     const label = document.createElement('label'); label.className = "flex items-center gap-2 p-2 bg-white border rounded cursor-pointer hover:bg-blue-50 text-sm";
@@ -454,8 +528,16 @@
                     label.querySelector('input').onchange = CallLog.checkValidity;
                     conS.appendChild(label);
                 });
-                const selP = document.getElementById('issue-dropdown'); selP.innerHTML = '<option value="" disabled selected>Sila Pilih...</option>';
-                CallLog.options.perkara.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.text = p; selP.appendChild(opt); });
+
+                // Render Perkara (Isu) Dropdown
+                const selP = document.getElementById('issue-dropdown'); 
+                selP.innerHTML = '<option value="" disabled selected>Sila Pilih...</option>';
+                CallLog.options.perkara.forEach(p => { 
+                    const opt = document.createElement('option'); 
+                    opt.value = p; 
+                    opt.text = p; 
+                    selP.appendChild(opt); 
+                });
                 selP.onchange = CallLog.checkValidity;
             },
 
@@ -470,14 +552,16 @@
                     e.preventDefault();
                     const val = e.target.value.trim();
                     if(val) {
-                        const payload = {}; payload[type] = val;
-                        const { error } = await supabase.from('isu').insert([payload]);
+                        const payload = {}; 
+                        payload[type] = val; // type is 'komunikasi', 'sistem', or 'perkara'
+                        
+                        const { error } = await sbClient.from('isu').insert([payload]);
                         if(error) alert(error.message);
                         else { 
                             Utils.showToast("Berjaya ditambah!"); 
                             e.target.value = ''; 
                             document.getElementById('add-input-'+type).classList.add('hidden');
-                            CallLog.init(); 
+                            CallLog.init(); // Reload options from table
                         }
                     }
                 }
@@ -488,7 +572,7 @@
                 if (!query || query.length < 2) { dd.classList.add('hidden'); return; }
                 STATE.searchTimeout = setTimeout(async () => {
                     dd.classList.remove('hidden'); dd.innerHTML = '<div class="p-2 text-center text-xs">Loading...</div>';
-                    const { data } = await supabase.from('personnel').select('*').or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%,kod_ptj.ilike.%${query}%`).limit(5);
+                    const { data } = await sbClient.from('personnel').select('*').or(`nama.ilike.%${query}%,ic_number.ilike.%${query}%,kod_ptj.ilike.%${query}%`).limit(5);
                     dd.innerHTML = '';
                     if (!data || data.length === 0) { const item = document.createElement('div'); item.className = "p-3 hover:bg-green-50 text-green-700 cursor-pointer text-sm font-bold border-b"; item.innerHTML = `+ Tiada Rekod. Tambah "${query}"?`; item.onclick = () => CallLog.prepareNewUser(query); dd.appendChild(item); return; }
                     data.forEach(p => { const item = document.createElement('div'); item.className = "p-3 hover:bg-blue-50 cursor-pointer border-b"; item.innerHTML = `<div class="font-bold text-sm">${p.nama}</div><div class="text-xs text-gray-500">${p.ic_number} | ${p.department}</div>`; item.onclick = () => CallLog.fillForm(p); dd.appendChild(item); });
@@ -509,7 +593,7 @@
                 btn.classList.toggle('opacity-50', !isValid); 
                 btn.classList.toggle('cursor-not-allowed', !isValid); 
             },
-            updateMasterData: async () => { const payload = { ic_number: document.getElementById('ic').value, nama: document.getElementById('nama').value, kod_ptj: document.getElementById('kod_ptj').value, department: document.getElementById('department').value, emel: document.getElementById('emel').value, telefon: document.getElementById('telefon').value, gred: document.getElementById('gred').value }; const { data: exist } = await supabase.from('personnel').select('id').eq('ic_number', payload.ic_number).maybeSingle(); const { error } = exist ? await supabase.from('personnel').update(payload).eq('ic_number', payload.ic_number) : await supabase.from('personnel').insert([payload]); if(!error) { Utils.showToast("Data Induk Dikemaskini!"); document.getElementById('btn-update-master').classList.add('hidden'); } },
+            updateMasterData: async () => { const payload = { ic_number: document.getElementById('ic').value, nama: document.getElementById('nama').value, kod_ptj: document.getElementById('kod_ptj').value, department: document.getElementById('department').value, emel: document.getElementById('emel').value, telefon: document.getElementById('telefon').value, gred: document.getElementById('gred').value }; const { data: exist } = await sbClient.from('personnel').select('id').eq('ic_number', payload.ic_number).maybeSingle(); const { error } = exist ? await sbClient.from('personnel').update(payload).eq('ic_number', payload.ic_number) : await sbClient.from('personnel').insert([payload]); if(!error) { Utils.showToast("Data Induk Dikemaskini!"); document.getElementById('btn-update-master').classList.add('hidden'); } },
             
             submit: async (e) => { 
                 e.preventDefault(); 
@@ -537,7 +621,7 @@
                         sistem: system, perkara: issue 
                     }; 
                     
-                    const { error } = await supabase.from('rekod').insert([logEntry]); 
+                    const { error } = await sbClient.from('rekod').insert([logEntry]); 
                     if (error) throw error;
                     
                     CallLog.updateMasterData(); 
@@ -557,7 +641,6 @@
         const Records = {
             userMap: {},
             currentRecords: [],
-            // Initial Column Configuration
             columns: [
                 { id: 'created_at', label: 'Tarikh Event' },
                 { id: 'nama_ic', label: 'Nama / IC' },
@@ -587,33 +670,25 @@
                     th.draggable = true;
                     th.dataset.index = index;
                     
-                    // Header Content (Editable Span)
                     const span = document.createElement('span');
                     span.contentEditable = true;
                     span.innerText = col.label;
                     span.className = "cursor-text focus:cursor-text w-full block";
                     span.onblur = (e) => {
                         Records.columns[index].label = e.target.innerText;
-                        // console.log("Updated header:", Records.columns);
                     };
                     
-                    // Prevent drag when clicking text to edit
                     span.onmousedown = (e) => e.stopPropagation(); 
-
                     th.appendChild(span);
-
-                    // Drag Events
                     th.addEventListener('dragstart', Records.handleDragStart);
                     th.addEventListener('dragover', Records.handleDragOver);
                     th.addEventListener('dragleave', Records.handleDragLeave);
                     th.addEventListener('drop', Records.handleDrop);
-                    
                     tr.appendChild(th);
                 });
                 thead.appendChild(tr);
             },
 
-            // Drag and Drop Logic
             dragSrcIndex: null,
             handleDragStart: (e) => {
                 Records.dragSrcIndex = e.target.closest('th').dataset.index;
@@ -643,13 +718,10 @@
                 const dropIndex = parseInt(th.dataset.index);
 
                 if (dragIndex !== dropIndex) {
-                    // Reorder columns array
                     const item = Records.columns.splice(dragIndex, 1)[0];
                     Records.columns.splice(dropIndex, 0, item);
-                    
-                    // Re-render
                     Records.renderHeader();
-                    Records.renderBody(); // Re-render body to match new order
+                    Records.renderBody(); 
                 }
                 return false;
             },
@@ -659,15 +731,13 @@
                 tbody.innerHTML = '<tr><td colspan="100%" class="text-center p-4"><div class="loader"></div></td></tr>';
                 try {
                     const [ { data: records }, { data: users } ] = await Promise.all([ 
-                        supabase.from('rekod').select('*').order('created_at', { ascending: false }).limit(100), 
-                        supabase.from('user_ba').select('name, emel') 
+                        sbClient.from('rekod').select('*').order('created_at', { ascending: false }).limit(100), 
+                        sbClient.from('user_ba').select('name, emel') 
                     ]);
                     
                     if(users) users.forEach(u => { if(u.emel) Records.userMap[u.emel.toLowerCase()] = u.name; });
-                    
                     Records.currentRecords = records || [];
                     Records.renderBody();
-
                 } catch (e) { tbody.innerHTML = `<tr><td colspan="100%" class="text-red-500 p-4">Error: ${e.message}</td></tr>`; }
             },
 
@@ -684,7 +754,6 @@
                     const tr = document.createElement('tr');
                     tr.className = "border-b hover:bg-gray-50 align-top";
 
-                    // Pre-process data fields
                     const recName = r.perekod ? (Records.userMap[r.perekod.toLowerCase()] || r.perekod.split('@')[0]) : '-';
                     const updName = r.status_updated_by ? (Records.userMap[r.status_updated_by.toLowerCase()] || r.status_updated_by.split('@')[0]) : '-';
                     let displaySistem = r.sistem;
@@ -692,34 +761,19 @@
                     if (!displaySistem && r.notes && r.notes.includes(' - ')) displaySistem = r.notes.split(' - ')[0];
                     if (!displayPerkara && r.notes && r.notes.includes(' - ')) { const parts = r.notes.split(' - '); if(parts.length > 1) displayPerkara = parts[1].split(' (')[0]; }
 
-                    // Render columns based on current order
                     Records.columns.forEach(col => {
                         const td = document.createElement('td');
                         td.className = "p-3";
 
                         switch(col.id) {
-                            case 'created_at':
-                                td.innerText = Utils.formatDate(r.created_at);
-                                break;
-                            case 'nama_ic':
-                                td.innerHTML = `<div class="font-bold text-gray-800">${r.nama}</div><div class="text-xs text-gray-500">${r.ic_number}</div>`;
-                                break;
-                            case 'department':
-                                td.className += " text-xs";
-                                td.innerText = r.department;
-                                break;
+                            case 'created_at': td.innerText = Utils.formatDate(r.created_at); break;
+                            case 'nama_ic': td.innerHTML = `<div class="font-bold text-gray-800">${r.nama}</div><div class="text-xs text-gray-500">${r.ic_number}</div>`; break;
+                            case 'department': td.className += " text-xs"; td.innerText = r.department; break;
                             case 'komunikasi':
-                                // DYNAMIC DROPDOWN FOR KOMUNIKASI
                                 const selectKom = document.createElement('select');
                                 selectKom.className = "border rounded px-2 py-1 text-xs bg-white text-purple-700 w-full";
-                                
-                                // Get options (ensure CallLog initialized or use defaults)
                                 const komOpts = CallLog.options.komunikasi.length ? CallLog.options.komunikasi : ["Email", "Call", "WhatsApp", "Walk-in"];
-                                
-                                // Current value or fallback
                                 const currentKom = r.komunikasi || '';
-                                
-                                // Add default/placeholder if current not in list (optional)
                                 komOpts.forEach(opt => {
                                     const option = document.createElement('option');
                                     option.value = opt;
@@ -727,30 +781,14 @@
                                     if(opt === currentKom) option.selected = true;
                                     selectKom.appendChild(option);
                                 });
-                                
                                 selectKom.onchange = (e) => Records.updateField(r.id, 'komunikasi', e.target.value);
                                 td.appendChild(selectKom);
                                 break;
-                            case 'sistem':
-                                td.className += " text-xs font-bold text-gray-600";
-                                td.innerText = displaySistem || '-';
-                                break;
-                            case 'perkara':
-                                td.className += " text-sm";
-                                td.innerText = displayPerkara || '-';
-                                break;
-                            case 'perekod':
-                                td.className += " text-xs font-medium text-blue-700";
-                                td.innerText = recName;
-                                break;
-                            case 'updated_at':
-                                td.className += " text-xs text-gray-600";
-                                td.innerText = Utils.formatDate(r.status_updated_at);
-                                break;
-                            case 'updated_by':
-                                td.className += " text-xs font-medium text-blue-700";
-                                td.innerText = updName;
-                                break;
+                            case 'sistem': td.className += " text-xs font-bold text-gray-600"; td.innerText = displaySistem || '-'; break;
+                            case 'perkara': td.className += " text-sm"; td.innerText = displayPerkara || '-'; break;
+                            case 'perekod': td.className += " text-xs font-medium text-blue-700"; td.innerText = recName; break;
+                            case 'updated_at': td.className += " text-xs text-gray-600"; td.innerText = Utils.formatDate(r.status_updated_at); break;
+                            case 'updated_by': td.className += " text-xs font-medium text-blue-700"; td.innerText = updName; break;
                             case 'status':
                                 const selectStatus = document.createElement('select');
                                 selectStatus.className = `border rounded px-2 py-1 text-xs font-bold ${r.confirmation==='YA'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`;
@@ -758,8 +796,7 @@
                                 selectStatus.onchange = (e) => Records.updateField(r.id, 'confirmation', e.target.value);
                                 td.appendChild(selectStatus);
                                 break;
-                            default:
-                                td.innerText = '-';
+                            default: td.innerText = '-';
                         }
                         tr.appendChild(td);
                     });
@@ -772,30 +809,26 @@
                 const updateData = {};
                 updateData[field] = val;
                 
-                // If updating status/confirmation, update metadata too
                 if(field === 'confirmation') {
                     updateData.status_updated_at = new Date();
                     updateData.status_updated_by = STATE.currentUser.email;
                 }
 
-                const { error } = await supabase.from('rekod').update(updateData).eq('id', id);
-                
+                const { error } = await sbClient.from('rekod').update(updateData).eq('id', id);
                 if(error) {
                     alert("Update failed: " + error.message);
                 } else {
                     Utils.showToast(`${field === 'confirmation' ? 'Status' : 'Data'} Dikemaskini`);
-                    Records.fetch(); // Refresh to reflect changes (e.g. background colors)
+                    Records.fetch();
                 }
             },
 
             exportExcel: async () => {
-                const { data } = await supabase.from('rekod').select('*').order('created_at', {ascending:false});
+                const { data } = await sbClient.from('rekod').select('*').order('created_at', {ascending:false});
                 if(!data || !data.length) return alert("Tiada data untuk diexport.");
                 
-                // Map data based on CURRENT Column Order and Custom Labels
                 const rows = data.map(r => {
                     const rowData = {};
-                    
                     Records.columns.forEach(col => {
                         let value = '';
                         switch(col.id) {
@@ -810,10 +843,8 @@
                             case 'updated_by': value = r.status_updated_by ? (Records.userMap[r.status_updated_by.toLowerCase()] || r.status_updated_by.split('@')[0]) : '-'; break;
                             case 'status': value = r.confirmation; break;
                         }
-                        // Use the Editable Label as the Excel Header
                         rowData[col.label] = value;
                     });
-                    
                     return rowData;
                 });
 
@@ -830,18 +861,17 @@
             switchTab: (id) => {
                 document.querySelectorAll('.loan-tab-content').forEach(e => e.classList.add('hidden')); document.getElementById('loan-tab-'+id).classList.remove('hidden');
                 ['borrow','return','admin','history'].forEach(t => { const btn = document.getElementById('btn-loan-'+t); if(t===id) { btn.classList.add('tab-active-sub'); btn.classList.remove('tab-inactive-sub'); } else { btn.classList.add('tab-inactive-sub'); btn.classList.remove('tab-active-sub'); } });
-                // Prevent past dates in Borrow
                 if(id === 'borrow') { const today = new Date().toISOString().split('T')[0]; document.getElementById('loanStartDate').min = today; document.getElementById('loanEndDate').min = today; }
                 if(id === 'history') Loan.loadHistory();
             },
             loadData: async () => {
-                const { data: u } = await supabase.from('user_ba').select('name').order('name'); const ul = document.getElementById('userList'); ul.innerHTML = ''; if(u) u.forEach(i => ul.appendChild(new Option(i.name, i.name)));
-                const { data: d } = await supabase.from('device_inventory').select('*').eq('status','Tersedia').order('tag'); const ds = document.getElementById('deviceSelect'); ds.innerHTML = '<option value="" disabled selected>Pilih...</option>'; if(d) d.forEach(i => ds.appendChild(new Option(`${i.tag} - ${i.type}`, i.tag)));
-                const { data: r } = await supabase.from('device_inventory').select('*').eq('status','Dipinjam').order('tag'); const rs = document.getElementById('returnSelect'); rs.innerHTML = '<option value="" disabled selected>Pilih...</option>'; if(r) r.forEach(i => rs.appendChild(new Option(`${i.tag} - ${i.type}`, i.tag)));
+                const { data: u } = await sbClient.from('user_ba').select('name').order('name'); const ul = document.getElementById('userList'); ul.innerHTML = ''; if(u) u.forEach(i => ul.appendChild(new Option(i.name, i.name)));
+                const { data: d } = await sbClient.from('device_inventory').select('*').eq('status','Tersedia').order('tag'); const ds = document.getElementById('deviceSelect'); ds.innerHTML = '<option value="" disabled selected>Pilih...</option>'; if(d) d.forEach(i => ds.appendChild(new Option(`${i.tag} - ${i.type}`, i.tag)));
+                const { data: r } = await sbClient.from('device_inventory').select('*').eq('status','Dipinjam').order('tag'); const rs = document.getElementById('returnSelect'); rs.innerHTML = '<option value="" disabled selected>Pilih...</option>'; if(r) r.forEach(i => rs.appendChild(new Option(`${i.tag} - ${i.type}`, i.tag)));
                 Loan.loadActiveLoans();
             },
             loadActiveLoans: async () => {
-                 const { data: a } = await supabase.from('rekod_pinjaman').select('*').eq('status','Active').order('created_at',{ascending:false});
+                 const { data: a } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active').order('created_at',{ascending:false});
                  const tb = document.getElementById('active-loans-body'); tb.innerHTML = '';
                  const today = new Date().setHours(0,0,0,0);
                  if(a) a.forEach(l => {
@@ -853,16 +883,16 @@
                 const u = document.getElementById('loanUserName').value, d = document.getElementById('deviceSelect').value, s = document.getElementById('loanStartDate').value, e = document.getElementById('loanEndDate').value;
                 if(!u || !d || !s || !e) return alert("Sila isi semua.");
                 const sDate = new Date(s); const eDate = new Date(e); if(eDate < sDate) return alert("Ralat: Tarikh Tamat tidak boleh sebelum Tarikh Mula.");
-                const { error } = await supabase.from('rekod_pinjaman').insert([{ user_name: u, device_tag: d, start_date: s, end_date: e, usage_type: document.getElementById('usageType').value, usage_details: document.getElementById('usageDetails').value, status: 'Active', issued_by: STATE.currentUser.email }]);
-                if(!error) { await supabase.from('device_inventory').update({status:'Dipinjam'}).eq('tag',d); Utils.showToast("Pinjaman Direkod!"); Loan.loadData(); document.getElementById('loanForm').reset(); }
+                const { error } = await sbClient.from('rekod_pinjaman').insert([{ user_name: u, device_tag: d, start_date: s, end_date: e, usage_type: document.getElementById('usageType').value, usage_details: document.getElementById('usageDetails').value, status: 'Active', issued_by: STATE.currentUser.email }]);
+                if(!error) { await sbClient.from('device_inventory').update({status:'Dipinjam'}).eq('tag',d); Utils.showToast("Pinjaman Direkod!"); Loan.loadData(); document.getElementById('loanForm').reset(); }
             },
             submitReturn: async () => {
-                const t = document.getElementById('returnSelect').value; if(!t) return; const { data: l } = await supabase.from('rekod_pinjaman').select('id').eq('device_tag', t).eq('status','Active').maybeSingle();
-                if(l) { await supabase.from('rekod_pinjaman').update({ status: 'Returned', return_date: new Date(), received_by: STATE.currentUser.email }).eq('id', l.id); await supabase.from('device_inventory').update({status:'Tersedia'}).eq('tag', t); Utils.showToast("Dipulangkan!"); Loan.loadData(); }
+                const t = document.getElementById('returnSelect').value; if(!t) return; const { data: l } = await sbClient.from('rekod_pinjaman').select('id').eq('device_tag', t).eq('status','Active').maybeSingle();
+                if(l) { await sbClient.from('rekod_pinjaman').update({ status: 'Returned', return_date: new Date(), received_by: STATE.currentUser.email }).eq('id', l.id); await sbClient.from('device_inventory').update({status:'Tersedia'}).eq('tag', t); Utils.showToast("Dipulangkan!"); Loan.loadData(); }
             },
             loadHistory: async () => {
                 const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="9"><div class="loader"></div></td></tr>';
-                const [ { data: loans }, { data: devices } ] = await Promise.all([ supabase.from('rekod_pinjaman').select('*').order('created_at',{ascending:false}), supabase.from('device_inventory').select('tag, serial') ]);
+                const [ { data: loans }, { data: devices } ] = await Promise.all([ sbClient.from('rekod_pinjaman').select('*').order('created_at',{ascending:false}), sbClient.from('device_inventory').select('tag, serial') ]);
                 Loan.deviceMap = {}; if(devices) devices.forEach(d => Loan.deviceMap[d.tag] = d.serial);
                 Loan.currentHistory = loans || []; tb.innerHTML = '';
                 const today = new Date().setHours(0,0,0,0);
@@ -873,8 +903,8 @@
                 });
             },
             checkOverdueLoans: async () => {
-                 const { data: loans } = await supabase.from('rekod_pinjaman').select('*').eq('status','Active');
-                 const { data: users } = await supabase.from('user_ba').select('name, emel');
+                 const { data: loans } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
+                 const { data: users } = await sbClient.from('user_ba').select('name, emel');
                  const today = new Date().setHours(0,0,0,0);
                  const overdue = loans.filter(l => new Date(l.end_date) < today);
                  const tb = document.getElementById('overdue-list-body'); tb.innerHTML = '';
@@ -896,16 +926,18 @@
                 }));
                 const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sejarah"); XLSX.writeFile(wb, "Sejarah_Pinjaman.xlsx");
             },
-            addUser: async () => { const n = document.getElementById('newUserName').value; const e = document.getElementById('newUserEmail').value; if(n) { await supabase.from('user_ba').insert([{name:n, emel:e}]); await Loan.loadData(); document.getElementById('newUserName').value = ''; document.getElementById('newUserEmail').value = ''; Utils.showToast("User Added & List Updated"); } },
-            addDevice: async () => { const t = document.getElementById('newTag').value; const s = document.getElementById('newSerial').value; const type = document.getElementById('newType').value; if(t) { await supabase.from('device_inventory').insert([{tag:t, type:type, serial:s, status:'Tersedia'}]); await Loan.loadData(); document.getElementById('newTag').value = ''; document.getElementById('newSerial').value = ''; Utils.showToast("Device Added & List Updated"); } }
+            addUser: async () => { const n = document.getElementById('newUserName').value; const e = document.getElementById('newUserEmail').value; if(n) { await sbClient.from('user_ba').insert([{name:n, emel:e}]); await Loan.loadData(); document.getElementById('newUserName').value = ''; document.getElementById('newUserEmail').value = ''; Utils.showToast("User Added & List Updated"); } },
+            addDevice: async () => { const t = document.getElementById('newTag').value; const s = document.getElementById('newSerial').value; const type = document.getElementById('newType').value; if(t) { await sbClient.from('device_inventory').insert([{tag:t, type:type, serial:s, status:'Tersedia'}]); await Loan.loadData(); document.getElementById('newTag').value = ''; document.getElementById('newSerial').value = ''; Utils.showToast("Device Added & List Updated"); } }
         };
 
-        document.addEventListener('DOMContentLoaded', () => { if (typeof lucide !== 'undefined') lucide.createIcons(); Auth.init(); 
+        document.addEventListener('DOMContentLoaded', () => { 
+            if (typeof lucide !== 'undefined') lucide.createIcons(); 
+            Auth.init(); 
             document.getElementById('login-form').addEventListener('submit', Auth.login);
             document.getElementById('global-search').addEventListener('input', (e) => CallLog.handleSearch(e.target.value));
             document.getElementById('data-form').addEventListener('submit', CallLog.submit);
             CallLog.init();
-            document.querySelectorAll('#data-form input, #data-form select').forEach(i => i.addEventListener('input', () => { CallLog.checkValidity(); if(!i.readOnly && i.id !== 'other-issue-input') document.getElementById('btn-update-master').classList.remove('hidden'); }));
+            document.querySelectorAll('#data-form input, #data-form select').forEach(i => i.addEventListener('input', () => { CallLog.checkValidity(); if(!i.readOnly && i.id !== 'other-issue-input') { const btn = document.getElementById('btn-update-master'); if(btn) btn.classList.remove('hidden'); } }));
         });
     </script>
 </body>
