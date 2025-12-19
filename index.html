@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod IT (v19 - Remove Serial Column)</title>
+    <title>Sistem Rekod IT (v20 - No Wrap & Scalable)</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,9 +16,24 @@
     <style>
         /* --- GLOBAL STYLES --- */
         :root { --base-font-size: 16px; }
-        html { font-size: var(--base-font-size); }
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        html { 
+            font-size: var(--base-font-size); 
+            /* Prevent text wrapping globally for key data areas */
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f3f4f6; 
+            overflow-x: auto; /* Ensure horizontal scroll if font gets too big */
+        }
         
+        /* Force no wrap and no truncation on important elements */
+        .no-wrap-content, 
+        th, td, label, .tab-active-main, .tab-inactive-main, .tab-active-sub, .tab-inactive-sub {
+            white-space: nowrap !important;
+            text-overflow: clip !important;
+            overflow: visible !important;
+        }
+
         .hidden-section { display: none !important; }
         .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
@@ -29,7 +44,20 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        /* Ensure table container expands and doesn't squeeze columns */
+        .table-container { 
+            width: 100%; 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #e5e7eb;
+            background: white;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: max-content; /* Force table to take full width of its contents */
+            min-width: 100%;
+        }
         
         #debug-console {
             background-color: #1a1a1a; color: #00ff00; font-family: monospace;
@@ -51,19 +79,6 @@
             0% { transform: scale(1); opacity: 0.8; }
             50% { transform: scale(1.2); opacity: 1; text-shadow: 0 0 25px rgba(229, 9, 20, 1); }
             100% { transform: scale(1); opacity: 0.8; }
-        }
-        .login-btn-anim.success {
-            width: 50px !important; border-radius: 50px !important;
-            background-color: #22c55e !important; color: transparent !important; pointer-events: none;
-        }
-        .login-btn-anim.success::before {
-            content: ""; position: absolute; width: 15px; height: 24px;
-            border-right: 4px solid white; border-bottom: 4px solid white;
-            transform: rotate(45deg) translate(-2px, -2px); animation: checkmark 0.3s ease-in-out forwards;
-        }
-        @keyframes checkmark {
-            0% { opacity: 0; transform: rotate(45deg) scale(0.5) translate(-2px, -2px); }
-            100% { opacity: 1; transform: rotate(45deg) scale(1) translate(-2px, -2px); }
         }
         
         .tab-active-main { background-color: #1e3a8a !important; color: white; }
@@ -106,26 +121,26 @@
                 <div class="flex items-center mb-2 md:mb-0">
                     <span class="font-bold text-lg mr-6">Sistem Rekod UTM</span>
                     <div class="flex gap-1">
-                        <button onclick="UI.adjustFontSize(-1)" class="bg-white/20 px-2 rounded hover:bg-white/40">A-</button>
-                        <button onclick="UI.adjustFontSize(1)" class="bg-white/20 px-2 rounded hover:bg-white/40">A+</button>
+                        <button onclick="UI.adjustFontSize(-1)" class="bg-white/20 px-3 py-1 rounded hover:bg-white/40 text-sm">A-</button>
+                        <button onclick="UI.adjustFontSize(1)" class="bg-white/20 px-3 py-1 rounded hover:bg-white/40 text-sm">A+</button>
                     </div>
-                    <div class="ml-6 flex gap-2">
+                    <div class="ml-6 flex gap-2 overflow-x-auto">
                         <button onclick="Navigation.switchMainTab('call-log')" id="nav-call-log" class="px-3 py-1 rounded text-sm font-medium tab-active-main">Call Log</button>
                         <button onclick="Navigation.switchMainTab('loan')" id="nav-loan" class="px-3 py-1 rounded text-sm font-medium tab-inactive-main">Pinjaman ICT</button>
                     </div>
                 </div>
                 <div class="flex items-center text-sm">
-                    <span id="user-display" class="mr-4 text-blue-200 truncate max-w-[150px]"></span>
+                    <span id="user-display" class="mr-4 text-blue-200"></span>
                     <button onclick="Auth.logout()" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">Keluar</button>
                 </div>
             </div>
         </nav>
 
-        <main class="flex-grow p-4 md:p-6 w-full mx-auto max-w-7xl"> 
+        <main class="flex-grow p-4 md:p-6 w-full mx-auto"> 
             
             <!-- MODULE 1: CALL LOG -->
             <div id="call-log-section" class="w-full">
-                <div class="flex border-b mb-6">
+                <div class="flex border-b mb-6 overflow-x-auto">
                     <button onclick="Navigation.switchCallLogTab('search')" id="btn-sub-search" class="px-6 py-2 font-medium tab-active-sub">INPUT</button>
                     <button onclick="Navigation.switchCallLogTab('records')" id="btn-sub-records" class="px-6 py-2 font-medium tab-inactive-sub">REKOD</button>
                 </div>
@@ -151,25 +166,24 @@
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <div class="space-y-4">
                                     <h3 class="font-bold text-gray-700 border-b pb-2">Maklumat Pengguna</h3>
-                                    <div><label class="text-sm font-medium text-gray-700">1. Nama</label><div class="relative"><input type="text" id="nama" class="w-full px-3 py-2 border rounded bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="Utils.enableField('nama')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
+                                    <div><label class="text-sm font-medium text-gray-700">1. Nama</label><div class="relative"><input type="text" id="nama" class="w-full px-3 py-2 border rounded bg-gray-50" readonly><button type="button" onclick="Utils.enableField('nama')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
                                     <div class="grid grid-cols-2 gap-4">
-                                        <div><label class="text-sm font-medium text-gray-700">2. IC</label><div class="relative"><input type="text" id="ic" class="w-full px-3 py-2 border rounded bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="Utils.enableField('ic')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                        <div><label class="text-sm font-medium text-gray-700">3. Kod PTJ</label><div class="relative"><input type="text" id="kod_ptj" class="w-full px-3 py-2 border rounded bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="Utils.enableField('kod_ptj')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
+                                        <div><label class="text-sm font-medium text-gray-700">2. IC</label><div class="relative"><input type="text" id="ic" class="w-full px-3 py-2 border rounded bg-gray-50" readonly><button type="button" onclick="Utils.enableField('ic')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
+                                        <div><label class="text-sm font-medium text-gray-700">3. Kod PTJ</label><div class="relative"><input type="text" id="kod_ptj" class="w-full px-3 py-2 border rounded bg-gray-50" readonly><button type="button" onclick="Utils.enableField('kod_ptj')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
-                                        <div><label class="text-sm font-medium text-gray-700">4. Jabatan</label><div class="relative"><input type="text" id="department" class="w-full px-3 py-2 border rounded bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="Utils.enableField('department')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                        <div><label class="text-sm font-medium text-gray-700">5. Emel</label><div class="relative"><input type="email" id="emel" class="w-full px-3 py-2 border rounded bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="Utils.enableField('emel')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
+                                        <div><label class="text-sm font-medium text-gray-700">4. Jabatan</label><div class="relative"><input type="text" id="department" class="w-full px-3 py-2 border rounded bg-gray-50" readonly><button type="button" onclick="Utils.enableField('department')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
+                                        <div><label class="text-sm font-medium text-gray-700">5. Emel</label><div class="relative"><input type="email" id="emel" class="w-full px-3 py-2 border rounded bg-gray-50" readonly><button type="button" onclick="Utils.enableField('emel')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
-                                        <div><label class="text-sm font-medium text-gray-700">6. No Telefon</label><div class="relative"><input type="text" id="telefon" class="w-full px-3 py-2 border rounded bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="Utils.enableField('telefon')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
-                                        <div><label class="text-sm font-medium text-gray-700">7. Gred</label><div class="relative"><input type="text" id="gred" class="w-full px-3 py-2 border rounded bg-gray-50 read-only:text-gray-500" readonly><button type="button" onclick="Utils.enableField('gred')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
+                                        <div><label class="text-sm font-medium text-gray-700">6. No Telefon</label><div class="relative"><input type="text" id="telefon" class="w-full px-3 py-2 border rounded bg-gray-50" readonly><button type="button" onclick="Utils.enableField('telefon')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
+                                        <div><label class="text-sm font-medium text-gray-700">7. Gred</label><div class="relative"><input type="text" id="gred" class="w-full px-3 py-2 border rounded bg-gray-50" readonly><button type="button" onclick="Utils.enableField('gred')" class="absolute right-2 top-2 text-gray-400"><i data-lucide="pencil" class="w-4 h-4"></i></button></div></div>
                                     </div>
                                 </div>
                                 <div class="bg-gray-50 p-4 rounded-lg border h-fit">
                                     <label class="block text-sm font-bold text-gray-800 mb-3 border-b pb-2">Kategori Sistem & Isu <span class="text-red-500">*</span></label>
                                     
                                     <div class="space-y-6">
-                                        <!-- Komunikasi -->
                                         <div>
                                             <div class="flex justify-between items-center mb-2">
                                                 <label class="block text-sm font-semibold text-gray-700">Medium Komunikasi</label>
@@ -181,7 +195,6 @@
                                             <div id="container-komunikasi" class="flex flex-wrap gap-2"></div>
                                         </div>
 
-                                        <!-- Sistem -->
                                         <div>
                                             <div class="flex justify-between items-center mb-2">
                                                 <label class="block text-sm font-semibold text-gray-700">Sistem</label>
@@ -190,10 +203,9 @@
                                             <div id="add-input-sistem" class="hidden mb-2 animate-fade-in">
                                                 <input type="text" id="input-new-sistem" placeholder="Taip dan Enter..." class="w-full px-2 py-1 border rounded text-sm focus:ring-2 focus:ring-blue-500 shadow-sm" onkeydown="CallLog.saveOnEnter(event, 'sistem')">
                                             </div>
-                                            <div id="container-sistem" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto"></div>
+                                            <div id="container-sistem" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
                                         </div>
 
-                                        <!-- Isu -->
                                         <div>
                                             <div class="flex justify-between items-center mb-2">
                                                 <label class="block text-sm font-semibold text-gray-700">Perkara (Isu)</label>
@@ -219,10 +231,10 @@
                     </div>
                 </div>
 
-                <!-- Database Table (DYNAMIC & DRAGGABLE) -->
+                <!-- Database Table (SCROLLABLE & NO WRAP) -->
                 <div id="sub-records-page" class="hidden-section">
                     <div class="bg-white p-6 rounded-lg shadow border">
-                        <div class="flex justify-between items-center mb-4">
+                        <div class="flex justify-between items-center mb-4 overflow-x-auto">
                             <h2 class="text-lg font-bold">Pangkalan Data Rekod</h2>
                             <div class="flex gap-2">
                                 <button onclick="Records.fetch()" class="bg-gray-100 p-2 rounded hover:bg-gray-200" title="Refresh"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
@@ -231,10 +243,10 @@
                         </div>
                         <div class="mb-2 text-xs text-gray-500">
                             <i data-lucide="info" class="w-3 h-3 inline"></i> 
-                            Drag headers to reorder. Click text to edit header name.
+                            Headers and content will never wrap. Scroll horizontally to see everything.
                         </div>
-                        <div class="table-container border rounded">
-                            <table class="min-w-full bg-white text-xs md:text-sm">
+                        <div class="table-container">
+                            <table id="main-records-table">
                                 <thead id="records-table-head" class="bg-gray-100 text-gray-700 uppercase leading-normal"></thead>
                                 <tbody id="records-table-body" class="text-gray-600 font-light"></tbody>
                             </table>
@@ -260,7 +272,7 @@
                         <form id="loanForm" class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div><label class="block text-sm font-medium mb-1">Nama Pengguna</label><input type="text" id="loanUserName" list="userList" class="w-full px-3 py-2 border rounded-lg" required><datalist id="userList"></datalist></div>
-                                <div><label class="block text-sm font-medium mb-1">Pilih Peranti</label><select id="deviceSelect" class="w-full px-3 py-2 border rounded-lg" required><option value="" disabled selected>Pilih...</option></select></div>
+                                <div><label class="block text-sm font-medium mb-1">Pilih Peranti</label><select id="deviceSelect" class="w-full px-3 py-2 border rounded-lg" required></select></div>
                                 <div><label class="block text-sm font-medium mb-1">Tarikh Mula</label><input type="date" id="loanStartDate" class="w-full px-3 py-2 border rounded-lg" required></div>
                                 <div><label class="block text-sm font-medium mb-1">Tarikh Tamat</label><input type="date" id="loanEndDate" class="w-full px-3 py-2 border rounded-lg" required></div>
                             </div>
@@ -275,12 +287,12 @@
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
                             <h5 class="text-lg font-bold text-gray-800 mb-2">Pulangkan Peranti</h5>
                             <p class="text-xs text-gray-500 mb-4">Sila pilih peranti yang sedang dipinjam di bawah</p>
-                            <select id="returnSelect" class="w-full max-w-md mx-auto px-3 py-2 border rounded-lg mb-4"><option value="" disabled selected>Pilih Peranti & Peminjam...</option></select>
+                            <select id="returnSelect" class="w-full max-w-md mx-auto px-3 py-2 border rounded-lg mb-4"></select>
                             <button type="button" onclick="Loan.submitReturn()" class="bg-green-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-green-700 block mx-auto">Sahkan Pulangan</button>
                         </div>
                     </div>
 
-                    <!-- ADMIN -->
+                    <!-- ADMIN & HISTORY TABLES (NO WRAP) -->
                     <div id="loan-tab-admin" class="loan-tab-content hidden">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                             <div class="space-y-6">
@@ -300,21 +312,25 @@
                             </div>
                             <div class="border p-4 rounded-lg bg-white h-full">
                                 <h6 class="font-bold mb-3 border-b pb-2">Senarai Pinjaman Aktif</h6>
-                                <div class="table-container"><table class="min-w-full text-xs"><thead class="bg-gray-100"><tr><th class="p-2 text-left">Peminjam</th><th class="p-2 text-left">Peranti</th><th class="p-2 text-left">Tamat</th></tr></thead><tbody id="active-loans-body"></tbody></table></div>
+                                <div class="table-container">
+                                    <table class="no-wrap-content">
+                                        <thead class="bg-gray-100"><tr><th class="p-2 text-left">Peminjam</th><th class="p-2 text-left">Peranti</th><th class="p-2 text-left">Tamat</th></tr></thead>
+                                        <tbody id="active-loans-body"></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- HISTORY -->
                     <div id="loan-tab-history" class="loan-tab-content hidden">
-                        <div class="flex justify-between items-center mb-4">
+                        <div class="flex justify-between items-center mb-4 overflow-x-auto">
                             <h6 class="font-bold text-gray-800">Log Sejarah Pinjaman</h6>
                             <button onclick="Loan.exportExcel()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs flex items-center gap-2">
                                 <i data-lucide="sheet" class="w-4 h-4"></i> Export Excel
                             </button>
                         </div>
-                        <div class="table-container border rounded-lg">
-                            <table class="min-w-full text-[10px] md:text-xs">
+                        <div class="table-container">
+                            <table>
                                 <thead class="bg-gray-100 text-gray-700 uppercase font-semibold">
                                     <tr>
                                         <th class="p-3 text-left border-b">Tarikh Pinjam</th>
@@ -341,7 +357,12 @@
     <div id="overdue-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 px-4">
         <div class="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
             <div class="p-4 border-b flex justify-between items-center bg-orange-50"><h3 class="text-lg font-bold text-orange-800">Senarai Lewat</h3><button onclick="document.getElementById('overdue-modal').classList.add('hidden')" class="text-gray-600 hover:text-gray-900 font-bold">X</button></div>
-            <div class="p-4 overflow-y-auto flex-grow"><table class="w-full text-sm text-left"><thead class="bg-gray-100"><tr><th class="p-2">Nama</th><th class="p-2">Peranti</th><th class="p-2">Tamat</th><th class="p-2 text-center">Tindakan</th></tr></thead><tbody id="overdue-list-body"></tbody></table></div>
+            <div class="p-4 overflow-y-auto flex-grow">
+                <table class="w-full text-sm text-left no-wrap-content">
+                    <thead class="bg-gray-100"><tr><th class="p-2">Nama</th><th class="p-2">Peranti</th><th class="p-2">Tamat</th><th class="p-2 text-center">Tindakan</th></tr></thead>
+                    <tbody id="overdue-list-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -351,9 +372,7 @@
         
         let sbClient; 
         try { 
-            sbClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
-                auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-            }); 
+            sbClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey); 
         } catch (e) { console.error("Supabase Init Error:", e); }
 
         const Utils = {
@@ -380,16 +399,8 @@
                 const password = document.getElementById('password').value;
                 try {
                     const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
-                    if (error) { 
-                        btn.classList.remove('loading'); 
-                        document.getElementById('login-error').innerText = error.message; 
-                        document.getElementById('login-error').classList.remove('hidden'); 
-                    } else { 
-                        setTimeout(() => { 
-                            btn.classList.remove('loading'); btn.classList.add('success'); 
-                            setTimeout(() => { Auth.handleLoginSuccess(data.user); btn.classList.remove('success'); }, 1000); 
-                        }, 1000); 
-                    }
+                    if (error) { btn.classList.remove('loading'); document.getElementById('login-error').innerText = error.message; document.getElementById('login-error').classList.remove('hidden'); } 
+                    else { Auth.handleLoginSuccess(data.user); }
                 } catch (err) { btn.classList.remove('loading'); }
             },
             handleLoginSuccess: (user) => { 
@@ -419,12 +430,16 @@
             }
         };
 
-        const UI = { adjustFontSize: (delta) => { STATE.baseFontSize += delta; document.documentElement.style.fontSize = STATE.baseFontSize + 'px'; } };
+        const UI = { 
+            adjustFontSize: (delta) => { 
+                STATE.baseFontSize = Math.max(10, STATE.baseFontSize + delta); 
+                document.documentElement.style.setProperty('--base-font-size', STATE.baseFontSize + 'px');
+            } 
+        };
 
         const CallLog = {
             options: { komunikasi: [], sistem: [], perkara: [] },
             init: async () => {
-                if (!STATE.currentUser) return;
                 const defaults = {
                     komunikasi: ["Email", "Call", "WhatsApp", "Walk-in"],
                     sistem: ["Portal", "ECP450", "ECP400", "HCP400", "SOLMAN", "PSA400", "BP1", "BWP"],
@@ -598,7 +613,7 @@
                         switch(col.id) {
                             case 'created_at': td.className += " text-xs"; td.innerText = Utils.formatDate(r.created_at); break;
                             case 'nama_ic': td.innerHTML = `<div class="font-bold text-gray-800 text-xs">${r.nama}</div><div class="text-[10px] text-gray-500">${r.ic_number}</div>`; break;
-                            case 'department': td.className += " text-[10px] max-w-[150px] truncate"; td.innerText = r.department; break;
+                            case 'department': td.className += " text-[10px]"; td.innerText = r.department; break;
                             case 'komunikasi':
                                 const selectKom = document.createElement('select'); selectKom.className = "border rounded px-2 py-1 text-[10px] bg-white text-blue-700 w-full";
                                 const komOpts = CallLog.options.komunikasi.length ? CallLog.options.komunikasi : ["Email", "Call", "WhatsApp", "Walk-in"];
@@ -652,7 +667,6 @@
         };
 
         const Loan = {
-            currentHistory: [],
             deviceMap: {},
             switchTab: (id) => {
                 document.querySelectorAll('.loan-tab-content').forEach(e => e.classList.add('hidden')); 
@@ -662,24 +676,6 @@
                     if(t===id) { btn.classList.add('tab-active-sub'); btn.classList.remove('tab-inactive-sub'); } 
                     else { btn.classList.add('tab-inactive-sub'); btn.classList.remove('tab-active-sub'); } 
                 });
-                
-                const today = Utils.getLocalToday();
-                
-                if(id === 'borrow') { 
-                    const s_in = document.getElementById('loanStartDate');
-                    const e_in = document.getElementById('loanEndDate');
-                    
-                    s_in.min = today; 
-                    if(!s_in.value || s_in.value < today) s_in.value = today;
-                    
-                    e_in.min = s_in.value;
-                    if(!e_in.value || e_in.value < s_in.value) e_in.value = s_in.value;
-
-                    s_in.onchange = () => {
-                        e_in.min = s_in.value;
-                        if(e_in.value < s_in.value) e_in.value = s_in.value;
-                    };
-                }
                 if(id === 'history') Loan.loadHistory();
             },
             loadData: async () => {
@@ -690,10 +686,9 @@
                 const { data: d } = await sbClient.from('device_inventory').select('*').eq('status','Tersedia').order('tag', { ascending: true }); 
                 const ds = document.getElementById('deviceSelect'); ds.innerHTML = '<option disabled selected>Pilih Peranti...</option>'; 
                 if(d) d.forEach(i => {
-                    const s_val = i.serial || i.serial_number || 'No Serial';
-                    const label = `${i.tag} - ${i.type} (${s_val})`;
+                    const label = `${i.tag} - ${i.type} (${i.serial || 'No Serial'})`;
                     ds.appendChild(new Option(label, i.tag));
-                    Loan.deviceMap[i.tag] = s_val; 
+                    Loan.deviceMap[i.tag] = i.serial; 
                 });
                 
                 const { data: activeLoans } = await sbClient.from('rekod_pinjaman').select('device_tag, user_name').eq('status','Active');
@@ -719,96 +714,30 @@
                 const s = document.getElementById('loanStartDate').value;
                 const e = document.getElementById('loanEndDate').value;
                 if(!u || !d || !s || !e) return alert("Sila isi semua maklumat.");
-
-                const today = Utils.getLocalToday();
-                if (s < today) return alert("Tarikh Mula tidak boleh sebelum tarikh hari ini.");
-                if (e < s) return alert("Tarikh Tamat tidak boleh sebelum Tarikh Mula.");
-
-                const { error } = await sbClient.from('rekod_pinjaman').insert([{ 
-                    user_name: u, device_tag: d, start_date: s, end_date: e, 
-                    usage_type: document.getElementById('usageType').value, 
-                    usage_details: document.getElementById('usageDetails').value, 
-                    status: 'Active', issued_by: STATE.currentUser.email
-                }]);
-                if(!error) { 
-                    await sbClient.from('device_inventory').update({status:'Dipinjam'}).eq('tag', d); 
-                    Utils.showToast("Berjaya Pinjam!"); Loan.loadData(); document.getElementById('loanForm').reset(); 
-                }
+                const { error } = await sbClient.from('rekod_pinjaman').insert([{ user_name: u, device_tag: d, start_date: s, end_date: e, usage_type: document.getElementById('usageType').value, usage_details: document.getElementById('usageDetails').value, status: 'Active', issued_by: STATE.currentUser.email }]);
+                if(!error) { await sbClient.from('device_inventory').update({status:'Dipinjam'}).eq('tag', d); Utils.showToast("Berjaya!"); Loan.loadData(); document.getElementById('loanForm').reset(); }
             },
             submitReturn: async () => {
                 const t = document.getElementById('returnSelect').value; if(!t) return alert("Sila pilih peranti.");
                 const { data } = await sbClient.from('rekod_pinjaman').select('id').eq('device_tag', t).eq('status','Active').maybeSingle();
-                if(data) { 
-                    await sbClient.from('rekod_pinjaman').update({ status: 'Returned', return_date: new Date(), received_by: STATE.currentUser.email }).eq('id', data.id); 
-                    await sbClient.from('device_inventory').update({status:'Tersedia'}).eq('tag', t); 
-                    Utils.showToast("Berjaya Dipulangkan!"); Loan.loadData(); 
-                }
+                if(data) { await sbClient.from('rekod_pinjaman').update({ status: 'Returned', return_date: new Date(), received_by: STATE.currentUser.email }).eq('id', data.id); await sbClient.from('device_inventory').update({status:'Tersedia'}).eq('tag', t); Utils.showToast("Dipulangkan!"); Loan.loadData(); }
             },
             loadHistory: async () => {
-                const tb = document.getElementById('loan-history-body'); 
-                tb.innerHTML = '<tr><td colspan="8" class="text-center p-4">Sila tunggu...</td></tr>';
-                
-                try {
-                    const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
-                    tb.innerHTML = '';
-                    
-                    if(data) data.forEach(l => { 
-                        const isLate = l.return_date && l.return_date.split('T')[0] > l.end_date;
-                        const rowClass = isLate ? 'text-red-600 font-bold bg-red-50' : 'text-gray-700';
-                        
-                        const pengeluar = l.issued_by ? (Records.userMap[l.issued_by.toLowerCase()] || l.issued_by.split('@')[0]) : '-';
-                        const penerima = l.received_by ? (Records.userMap[l.received_by.toLowerCase()] || l.received_by.split('@')[0]) : '-';
-                        const t_pulang = l.return_date ? Utils.formatDate(l.return_date) : '-';
-
-                        tb.innerHTML += `
-                            <tr class="border-b ${rowClass} hover:bg-gray-50">
-                                <td class="p-3">${Utils.formatDate(l.created_at)}</td>
-                                <td class="p-3 font-bold">${l.user_name}</td>
-                                <td class="p-3 text-blue-600 font-medium">${l.device_tag}</td>
-                                <td class="p-3">${l.start_date} - ${l.end_date}</td>
-                                <td class="p-3 text-gray-600">${pengeluar}</td>
-                                <td class="p-3 text-gray-600">${penerima}</td>
-                                <td class="p-3 font-medium text-green-700">${t_pulang}</td>
-                                <td class="p-3 uppercase font-semibold text-[9px]">${l.status}</td>
-                            </tr>`; 
-                    });
-                } catch (err) {
-                    tb.innerHTML = `<tr><td colspan="8" class="text-center p-4 text-red-500">Error: ${err.message}</td></tr>`;
-                }
+                const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="8" class="text-center p-4">Loading...</td></tr>';
+                const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
+                tb.innerHTML = '';
+                if(data) data.forEach(l => { 
+                    const p_eluar = l.issued_by ? (Records.userMap[l.issued_by.toLowerCase()] || l.issued_by.split('@')[0]) : '-';
+                    const p_enerima = l.received_by ? (Records.userMap[l.received_by.toLowerCase()] || l.received_by.split('@')[0]) : '-';
+                    tb.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-3">${Utils.formatDate(l.created_at)}</td><td class="p-3 font-bold">${l.user_name}</td><td class="p-3 text-blue-600">${l.device_tag}</td><td class="p-3">${l.start_date} - ${l.end_date}</td><td class="p-3">${p_eluar}</td><td class="p-3">${p_enerima}</td><td class="p-3">${l.return_date ? Utils.formatDate(l.return_date) : '-'}</td><td class="p-3 font-bold text-[10px]">${l.status}</td></tr>`; 
+                });
             },
             exportExcel: async () => {
-                try {
-                    Utils.showToast("Menjana Excel...");
-                    const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
-                    if(!data || data.length === 0) return alert("Tiada data sejarah untuk dieksport.");
-
-                    const exportData = data.map(l => {
-                        const pengeluar = l.issued_by ? (Records.userMap[l.issued_by.toLowerCase()] || l.issued_by) : '-';
-                        const penerima = l.received_by ? (Records.userMap[l.received_by.toLowerCase()] || l.received_by) : '-';
-                        const t_pulang = l.return_date ? Utils.formatDate(l.return_date) : '-';
-
-                        return {
-                            'Tarikh Pinjam': Utils.formatDate(l.created_at),
-                            'Peminjam': l.user_name,
-                            'Tag Aset': l.device_tag,
-                            'Tarikh Mula': l.start_date,
-                            'Tarikh Tamat': l.end_date,
-                            'Pegawai Pengeluar': pengeluar,
-                            'Pegawai Penerima': penerima,
-                            'Tarikh Pulang': t_pulang,
-                            'Status': l.status,
-                            'Jenis Kegunaan': l.usage_type || '-',
-                            'Butiran': l.usage_details || '-'
-                        };
-                    });
-
-                    const ws = XLSX.utils.json_to_sheet(exportData);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Sejarah Pinjaman ICT");
-                    XLSX.writeFile(wb, `Sejarah_Pinjaman_ICT_${new Date().toISOString().split('T')[0]}.xlsx`);
-                } catch (err) {
-                    alert("Gagal eksport: " + err.message);
-                }
+                const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "History");
+                XLSX.writeFile(wb, `Loan_History_${new Date().toISOString().split('T')[0]}.xlsx`);
             },
             checkOverdueLoans: async () => {
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
@@ -818,16 +747,10 @@
                 if(overdue.length) {
                     overdue.forEach(l => { tb.innerHTML += `<tr class="border-b"><td>${l.user_name}</td><td>${l.device_tag}</td><td class="text-red-600">${l.end_date}</td><td class="text-center"><button class="bg-orange-500 text-white px-2 py-1 rounded">Email</button></td></tr>`; });
                     document.getElementById('overdue-modal').classList.remove('hidden');
-                } else { Utils.showToast("Tiada rekod lewat setakat ini."); }
+                } else { Utils.showToast("Tiada rekod lewat."); }
             },
-            addUser: async () => { 
-                const n = document.getElementById('newUserName').value; 
-                if(n) { await sbClient.from('user_ba').insert([{name:n}]); Loan.loadData(); document.getElementById('newUserName').value=''; Utils.showToast("Peminjam ditambahkan."); } 
-            },
-            addDevice: async () => { 
-                const t = document.getElementById('newTag').value, tp = document.getElementById('newType').value, s = document.getElementById('newSerial').value;
-                if(t) { await sbClient.from('device_inventory').insert([{tag:t, type:tp, serial:s, status:'Tersedia'}]); Loan.loadData(); document.getElementById('newTag').value=''; Utils.showToast("Peranti ditambahkan."); }
-            }
+            addUser: async () => { const n = document.getElementById('newUserName').value; if(n) { await sbClient.from('user_ba').insert([{name:n}]); Loan.loadData(); document.getElementById('newUserName').value=''; } },
+            addDevice: async () => { const t = document.getElementById('newTag').value, tp = document.getElementById('newType').value, s = document.getElementById('newSerial').value; if(t) { await sbClient.from('device_inventory').insert([{tag:t, type:tp, serial:s, status:'Tersedia'}]); Loan.loadData(); document.getElementById('newTag').value=''; } }
         };
 
         document.addEventListener('DOMContentLoaded', () => { 
