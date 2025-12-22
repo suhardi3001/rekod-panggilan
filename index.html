@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod IT UTM (v31.1 - Validation Fix)</title>
+    <title>Sistem Rekod IT UTM (v31.2 - View Controls)</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,9 +18,21 @@
         html { font-size: var(--base-font-size); }
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; overflow-x: auto; }
         
+        /* Global Table Styles */
         .no-wrap-content, th, td, label { white-space: nowrap !important; }
         .hidden-section { display: none !important; }
         
+        /* Text Wrapping and Sizing Modes */
+        .wrap-mode th, .wrap-mode td { 
+            white-space: normal !important; 
+            word-break: break-word; 
+            min-width: 120px; 
+        }
+        .compact-mode th, .compact-mode td { 
+            white-space: nowrap !important; 
+            font-size: 9px !important; 
+        }
+
         .loader {
             border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%;
             width: 40px; height: 40px; animation: spin 1s linear infinite;
@@ -72,33 +84,43 @@
         </div>
     </div>
 
-<!-- 3. MAIN APP -->
-<div id="main-page" class="hidden-section min-h-screen flex flex-col">
-    <nav class="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
-        <div class="w-full px-4 py-2 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center">
-                <span class="font-bold text-lg mr-6">Rekod UTM</span>
-                <div class="flex gap-2">
-                    <button onclick="Navigation.switchModule('call-log')" id="nav-call-log" class="px-3 py-1 rounded text-sm font-medium tab-active-main">Call Log</button>
-                    <button onclick="Navigation.switchModule('loan')" id="nav-loan" class="px-3 py-1 rounded text-sm font-medium">Pinjaman ICT</button>
+    <!-- 3. MAIN APP -->
+    <div id="main-page" class="hidden-section min-h-screen flex flex-col">
+        <nav class="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
+            <div class="w-full px-4 py-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center">
+                    <span class="font-bold text-lg mr-6">Rekod UTM</span>
+                    <div class="flex gap-2">
+                        <button onclick="Navigation.switchModule('call-log')" id="nav-call-log" class="px-3 py-1 rounded text-sm font-medium tab-active-main">Call Log</button>
+                        <button onclick="Navigation.switchModule('loan')" id="nav-loan" class="px-3 py-1 rounded text-sm font-medium">Pinjaman ICT</button>
+                    </div>
+                </div>
+
+                <!-- TOP CENTER CONTROLS -->
+                <div class="flex items-center gap-2 bg-blue-900/50 p-1 rounded-lg">
+                    <button onclick="UI.setViewMode('wrap')" id="btn-view-wrap" class="px-3 py-1 rounded text-[10px] font-bold bg-white/10 hover:bg-white/20 flex items-center gap-1">
+                        <i data-lucide="wrap-text" class="w-3 h-3"></i> Wrap Text
+                    </button>
+                    <button onclick="UI.setViewMode('compact')" id="btn-view-compact" class="px-3 py-1 rounded text-[10px] font-bold bg-white/10 hover:bg-white/20 flex items-center gap-1">
+                        <i data-lucide="minimize-2" class="w-3 h-3"></i> Compact View
+                    </button>
+                    <button onclick="UI.setViewMode('default')" id="btn-view-default" class="px-3 py-1 rounded text-[10px] font-bold bg-white/10 hover:bg-white/20 flex items-center gap-1">
+                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-4 text-sm">
+                    <div class="flex gap-1">
+                        <button onclick="UI.adjustFontSize(-1)" class="bg-white/10 px-2 py-1 rounded hover:bg-white/20">A-</button>
+                        <button onclick="UI.adjustFontSize(1)" class="bg-white/10 px-2 py-1 rounded hover:bg-white/20">A+</button>
+                    </div>
+                    <span id="user-display" class="hidden md:inline text-blue-200"></span>
+                    <button onclick="Auth.logout()" class="bg-red-600 px-3 py-1 rounded font-bold">Keluar</button>
                 </div>
             </div>
-            <div class="flex items-center gap-4 text-sm">
-                <div class="flex gap-1">
-                    <button onclick="UI.adjustFontSize(-1)" class="bg-white/10 px-2 py-1 rounded hover:bg-white/20">A-</button>
-                    <button onclick="UI.adjustFontSize(1)" class="bg-white/10 px-2 py-1 rounded hover:bg-white/20">A+</button>
-                    <button onclick="toggleFontWrap(true)" class="bg-white/10 px-2 py-1 rounded hover:bg-white/20">Wrap Text</button>
-                    <button onclick="toggleFontWrap(false)" class="bg-white/10 px-2 py-1 rounded hover:bg-white/20">No Wrap</button>
-                </div>
-                <span id="user-display" class="hidden md:inline text-blue-200"></span>
-                <button onclick="Auth.logout()" class="bg-red-600 px-3 py-1 rounded font-bold">Keluar</button>
-            </div>
-        </div>
-    </nav>
-</div>
+        </nav>
 
-
-        <main class="flex-grow p-4 md:p-6">
+        <main class="flex-grow p-4 md:p-6" id="app-main-content">
             
             <!-- CALL LOG MODULE -->
             <div id="call-log-module" class="w-full">
@@ -180,7 +202,7 @@
                             </div>
                         </div>
                         <div class="table-container">
-                            <table id="main-records-table">
+                            <table id="main-records-table" class="data-table">
                                 <thead id="records-table-head" class="bg-gray-50 text-xs font-bold uppercase border-b"></thead>
                                 <tbody id="records-table-body" class="text-[10px] text-gray-600"></tbody>
                             </table>
@@ -210,7 +232,6 @@
                                 <div><label class="block text-xs font-bold text-gray-700 mb-1">Tarikh Mula</label><input type="date" id="loanStartDate" class="w-full px-4 py-2 border rounded-lg"></div>
                                 <div><label class="block text-xs font-bold text-gray-700 mb-1">Tarikh Tamat</label><input type="date" id="loanEndDate" class="w-full px-4 py-2 border rounded-lg"></div>
                                 
-                                <!-- ADDED DROPDOWN FOR LUAR/DALAMAN -->
                                 <div><label class="block text-xs font-bold text-gray-700 mb-1">Jenis Kegunaan</label><select id="usageType" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" required><option value="Kegunaan Dalaman">Kegunaan Dalaman</option><option value="Kegunaan Luar">Kegunaan Luar</option></select></div>
                                 
                                 <div class="md:col-span-1"><label class="block text-xs font-bold text-gray-700 mb-1">Tujuan / Butiran Pinjaman</label><textarea id="usageDetails" rows="1" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea></div>
@@ -260,7 +281,7 @@
                             <div class="border p-4 bg-white rounded shadow-sm">
                                 <h6 class="font-bold text-gray-800 mb-2 border-b pb-1">Pinjaman Aktif</h6>
                                 <div class="table-container text-[11px]">
-                                    <table class="w-full">
+                                    <table class="w-full data-table">
                                         <thead class="bg-gray-100"><tr><th class="p-2 text-left">Peminjam</th><th class="p-2 text-left">Tag</th><th class="p-2 text-left">Tamat</th></tr></thead>
                                         <tbody id="active-loans-body"></tbody>
                                     </table>
@@ -278,7 +299,7 @@
                             </button>
                         </div>
                         <div class="table-container">
-                            <table class="text-[10px]">
+                            <table class="text-[10px] data-table" id="loan-history-table">
                                 <thead class="bg-gray-100 font-bold border-b border-gray-300">
                                     <tr><th class="p-3 text-left">Tarikh Pinjam</th><th class="p-3 text-left">Peminjam</th><th class="p-3 text-left">Tag Aset</th><th class="p-3 text-left">Tempoh</th><th class="p-3 text-left">Pengeluar</th><th class="p-3 text-left">Penerima</th><th class="p-3 text-left">Tarikh Pulang</th><th class="p-3 text-left">Status</th></tr>
                                 </thead>
@@ -308,7 +329,7 @@
 
     <script>
         const CONFIG = { supabaseUrl: 'https://objxfgosatmasjjifkkg.supabase.co', supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw' };
-        const STATE = { currentUser: null, searchTimeout: null, baseFontSize: 16, userMap: {} };
+        const STATE = { currentUser: null, searchTimeout: null, baseFontSize: 16, userMap: {}, currentViewMode: 'default' };
         const sbClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
 
         const Utils = {
@@ -322,7 +343,6 @@
                     el.classList.add('ring-2', 'ring-blue-100'); 
                     el.focus(); 
                     document.getElementById('btn-update-master').classList.remove('hidden'); 
-                    // Add listener to re-check validity on manual edit
                     el.addEventListener('input', CallLog.checkValidity);
                 } 
             },
@@ -389,7 +409,32 @@
             }
         };
 
-        const UI = { adjustFontSize: (d) => { STATE.baseFontSize += d; document.documentElement.style.setProperty('--base-font-size', STATE.baseFontSize + 'px'); } };
+        const UI = { 
+            adjustFontSize: (d) => { STATE.baseFontSize += d; document.documentElement.style.setProperty('--base-font-size', STATE.baseFontSize + 'px'); },
+            
+            setViewMode: (mode) => {
+                const main = document.getElementById('app-main-content');
+                main.classList.remove('wrap-mode', 'compact-mode');
+                
+                document.getElementById('btn-view-wrap').classList.replace('bg-blue-600', 'bg-white/10');
+                document.getElementById('btn-view-compact').classList.replace('bg-blue-600', 'bg-white/10');
+                document.getElementById('btn-view-default').classList.replace('bg-blue-600', 'bg-white/10');
+
+                if (mode === 'wrap') {
+                    main.classList.add('wrap-mode');
+                    document.getElementById('btn-view-wrap').classList.replace('bg-white/10', 'bg-blue-600');
+                    Utils.showToast("Font Wrapping Diaktifkan");
+                } else if (mode === 'compact') {
+                    main.classList.add('compact-mode');
+                    document.getElementById('btn-view-compact').classList.replace('bg-white/10', 'bg-blue-600');
+                    Utils.showToast("View Padat (Font Kecil) Diaktifkan");
+                } else {
+                    document.getElementById('btn-view-default').classList.replace('bg-white/10', 'bg-blue-600');
+                    Utils.showToast("Paparan Reset");
+                }
+                STATE.currentViewMode = mode;
+            }
+        };
 
         const CallLog = {
             options: { komunikasi: [], sistem: [], perkara: [] },
@@ -450,7 +495,6 @@
                 ['nama','ic','kod_ptj','department','emel','telefon','gred'].forEach(k => {
                     const el = document.getElementById(k);
                     el.value = p[k==='ic'?'ic_number':k] || '';
-                    // Trigger validity on fill
                     el.dispatchEvent(new Event('input'));
                 });
                 document.getElementById('search-results-dropdown').classList.add('hidden'); 
@@ -469,15 +513,10 @@
                 const hasName = !!document.getElementById('nama').value.trim();
                 const hasSystem = !!document.querySelector('input[name="system_type"]:checked');
                 const hasPerkara = document.getElementById('issue-dropdown').value !== "";
-                
                 const isValid = hasName && hasSystem && hasPerkara;
-                
                 btn.disabled = !isValid;
-                if (isValid) {
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                } else {
-                    btn.classList.add('opacity-50', 'cursor-not-allowed');
-                }
+                btn.classList.toggle('opacity-50', !isValid);
+                btn.classList.toggle('cursor-not-allowed', !isValid);
             },
             updateMasterData: async () => {
                 const p = { ic_number: document.getElementById('ic').value, nama: document.getElementById('nama').value, kod_ptj: document.getElementById('kod_ptj').value, department: document.getElementById('department').value, emel: document.getElementById('emel').value, telefon: document.getElementById('telefon').value, gred: document.getElementById('gred').value };
@@ -487,34 +526,14 @@
             },
             submit: async (e) => {
                 e.preventDefault();
-                // Final safeguard check
                 const sysChecked = document.querySelector('input[name="system_type"]:checked');
                 const komChecked = document.querySelector('input[name="komunikasi"]:checked');
                 const issueVal = document.getElementById('issue-dropdown').value;
-                
                 if (!sysChecked || !issueVal) return Utils.showToast("Sila lengkapkan Sistem dan Perkara.");
-
-                const log = { 
-                    ic_number: document.getElementById('ic').value, 
-                    nama: document.getElementById('nama').value, 
-                    department: document.getElementById('department').value, 
-                    perekod: STATE.currentUser.email, 
-                    submitted_by: STATE.currentUser.id, 
-                    sistem: sysChecked.value, 
-                    perkara: issueVal, 
-                    komunikasi: komChecked ? komChecked.value : 'Call', 
-                    confirmation: 'TIDAK' 
-                };
-                
+                const log = { ic_number: document.getElementById('ic').value, nama: document.getElementById('nama').value, department: document.getElementById('department').value, perekod: STATE.currentUser.email, submitted_by: STATE.currentUser.id, sistem: sysChecked.value, perkara: issueVal, komunikasi: komChecked ? komChecked.value : 'Call', confirmation: 'TIDAK' };
                 const { error } = await sbClient.from('rekod').insert([log]);
-                if(!error) { 
-                    CallLog.updateMasterData(); 
-                    Utils.showToast("Rekod Disimpan"); 
-                    document.getElementById('data-form').reset(); 
-                    CallLog.checkValidity(); 
-                } else {
-                    Utils.showToast("Gagal menyimpan rekod.");
-                }
+                if(!error) { CallLog.updateMasterData(); Utils.showToast("Rekod Disimpan"); document.getElementById('data-form').reset(); CallLog.checkValidity(); }
+                else Utils.showToast("Gagal menyimpan rekod.");
             }
         };
 
@@ -575,19 +594,7 @@
             },
             update: async (id, v) => { await sbClient.from('rekod').update({ confirmation: v, status_updated_at: new Date(), status_updated_by: STATE.currentUser.email }).eq('id', id); Utils.showToast("Dikemaskini"); Records.fetch(); },
             exportExcel: () => {
-                const formatted = Records.currentData.map(r => ({
-                    'Tarikh Event': Utils.formatDate(r.created_at),
-                    'Nama': r.nama,
-                    'IC': r.ic_number,
-                    'Jabatan': r.department,
-                    'Komunikasi': r.komunikasi,
-                    'Sistem': r.sistem,
-                    'Isu': r.perkara,
-                    'Direkod Oleh': STATE.userMap[r.perekod?.toLowerCase()] || r.perekod,
-                    'Selesai Pada': r.status_updated_at ? Utils.formatDate(r.status_updated_at) : '-',
-                    'Selesai Oleh': STATE.userMap[r.status_updated_by?.toLowerCase()] || r.status_updated_by || '-',
-                    'Status': r.confirmation
-                }));
+                const formatted = Records.currentData.map(r => ({ 'Tarikh Event': Utils.formatDate(r.created_at), 'Nama': r.nama, 'IC': r.ic_number, 'Jabatan': r.department, 'Komunikasi': r.komunikasi, 'Sistem': r.sistem, 'Isu': r.perkara, 'Direkod Oleh': STATE.userMap[r.perekod?.toLowerCase()] || r.perekod, 'Selesai Pada': r.status_updated_at ? Utils.formatDate(r.status_updated_at) : '-', 'Selesai Oleh': STATE.userMap[r.status_updated_by?.toLowerCase()] || r.status_updated_by || '-', 'Status': r.confirmation }));
                 const ws = XLSX.utils.json_to_sheet(formatted);
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "CallLog");
                 XLSX.writeFile(wb, "Rekod_UTM_CallLog.xlsx");
@@ -618,16 +625,7 @@
                 document.getElementById('active-loans-body').innerHTML = data?.map(l => `<tr class="${l.end_date < Utils.getToday() ? 'bg-red-50 text-red-700 font-bold' : 'border-b'}"><td class="p-2">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2">${l.end_date}</td></tr>`).join('') || '';
             },
             submit: async () => {
-                const p = { 
-                    user_name: document.getElementById('loanUserName').value, 
-                    device_tag: document.getElementById('deviceSelect').value, 
-                    start_date: document.getElementById('loanStartDate').value, 
-                    end_date: document.getElementById('loanEndDate').value, 
-                    usage_type: document.getElementById('usageType').value, 
-                    usage_details: document.getElementById('usageDetails').value, 
-                    status: 'Active', 
-                    issued_by: STATE.currentUser.email 
-                };
+                const p = { user_name: document.getElementById('loanUserName').value, device_tag: document.getElementById('deviceSelect').value, start_date: document.getElementById('loanStartDate').value, end_date: document.getElementById('loanEndDate').value, usage_type: document.getElementById('usageType').value, usage_details: document.getElementById('usageDetails').value, status: 'Active', issued_by: STATE.currentUser.email };
                 if(!p.user_name || !p.device_tag) return alert("Pilih Peminjam & Peranti.");
                 try {
                     const { error } = await sbClient.from('rekod_pinjaman').insert([p]);
@@ -654,30 +652,11 @@
                     const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
                     Loan.currentHistory = data || [];
                     const today = Utils.getToday();
-                    
                     tb.innerHTML = data?.map(l => {
                         const isActiveLate = l.status === 'Active' && l.end_date < today;
                         const isReturnedLate = l.status === 'Returned' && l.return_date && (new Date(l.return_date).toISOString().split('T')[0] > l.end_date);
                         const isLate = isActiveLate || isReturnedLate;
-                        const p_eluar = STATE.userMap[l.issued_by?.toLowerCase()] || l.issued_by?.split('@')[0] || '-';
-                        const p_enerima = STATE.userMap[l.received_by?.toLowerCase()] || l.received_by?.split('@')[0] || '-';
-
-                        return `<tr class="${isLate ? 'bg-red-50 text-red-800' : 'border-b hover:bg-gray-50'}">
-                            <td class="p-3">${Utils.formatDate(l.created_at)}</td>
-                            <td class="p-3 font-bold">${l.user_name}</td>
-                            <td class="p-3 text-blue-600 font-bold">${l.device_tag}</td>
-                            <td class="p-3">
-                                ${l.start_date} hingga ${l.end_date}
-                                ${isActiveLate ? '<div class="text-[9px] font-black text-red-600 mt-1 uppercase">LEWAT</div>' : ''}
-                                ${isReturnedLate ? '<div class="text-[9px] font-black text-red-600 mt-1 uppercase">PULANG LEWAT</div>' : ''}
-                            </td>
-                            <td class="p-3">${p_eluar}</td>
-                            <td class="p-3">${p_enerima}</td>
-                            <td class="p-3">${l.return_date ? Utils.formatDate(l.return_date) : '-'}</td>
-                            <td class="p-3 font-black uppercase text-[8px]">
-                                <span class="${l.status === 'Active' ? 'text-blue-600' : 'text-gray-500'}">${l.status}</span>
-                            </td>
-                        </tr>`;
+                        return `<tr class="${isLate ? 'bg-red-50 text-red-800' : 'border-b hover:bg-gray-50'}"><td class="p-3">${Utils.formatDate(l.created_at)}</td><td class="p-3 font-bold">${l.user_name}</td><td class="p-3 text-blue-600 font-bold">${l.device_tag}</td><td class="p-3">${l.start_date} hingga ${l.end_date}${isActiveLate ? '<div class="text-[9px] font-black text-red-600 mt-1 uppercase">LEWAT</div>' : ''}${isReturnedLate ? '<div class="text-[9px] font-black text-red-600 mt-1 uppercase">PULANG LEWAT</div>' : ''}</td><td class="p-3">${STATE.userMap[l.issued_by?.toLowerCase()] || l.issued_by?.split('@')[0] || '-'}</td><td class="p-3">${STATE.userMap[l.received_by?.toLowerCase()] || l.received_by?.split('@')[0] || '-'}</td><td class="p-3">${l.return_date ? Utils.formatDate(l.return_date) : '-'}</td><td class="p-3 font-black uppercase text-[8px]"><span class="${l.status === 'Active' ? 'text-blue-600' : 'text-gray-500'}">${l.status}</span></td></tr>`;
                     }).join('') || '<tr><td colspan="8" class="p-4">Tiada sejarah dijumpai.</td></tr>';
                 } catch(e) { tb.innerHTML = '<tr><td colspan="8">Gagal memuatkan sejarah.</td></tr>'; }
             },
@@ -686,20 +665,7 @@
                 const formatted = Loan.currentHistory.map(l => {
                     const isActiveLate = l.status === 'Active' && l.end_date < today;
                     const isReturnedLate = l.status === 'Returned' && l.return_date && (new Date(l.return_date).toISOString().split('T')[0] > l.end_date);
-                    let lateStatus = '';
-                    if(isActiveLate) lateStatus = '(LEWAT)';
-                    if(isReturnedLate) lateStatus = '(PULANG LEWAT)';
-
-                    return {
-                        'Tarikh Pinjam': Utils.formatDate(l.created_at),
-                        'Peminjam': l.user_name,
-                        'Tag Aset': l.device_tag,
-                        'Tempoh Pinjaman': `${l.start_date} - ${l.end_date} ${lateStatus}`,
-                        'Pegawai Pengeluar': STATE.userMap[l.issued_by?.toLowerCase()] || l.issued_by,
-                        'Pegawai Penerima': STATE.userMap[l.received_by?.toLowerCase()] || l.received_by || '-',
-                        'Tarikh Pulang': l.return_date ? Utils.formatDate(l.return_date) : '-',
-                        'Status': l.status
-                    };
+                    return { 'Tarikh Pinjam': Utils.formatDate(l.created_at), 'Peminjam': l.user_name, 'Tag Aset': l.device_tag, 'Tempoh Pinjaman': `${l.start_date} - ${l.end_date} ${isActiveLate?'(LEWAT)':isReturnedLate?'(PULANG LEWAT)':''}`, 'Pegawai Pengeluar': STATE.userMap[l.issued_by?.toLowerCase()] || l.issued_by, 'Pegawai Penerima': STATE.userMap[l.received_by?.toLowerCase()] || l.received_by || '-', 'Tarikh Pulang': l.return_date ? Utils.formatDate(l.return_date) : '-', 'Status': l.status };
                 });
                 const ws = XLSX.utils.json_to_sheet(formatted);
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "HistoryPinjaman");
@@ -715,57 +681,23 @@
                     } else Utils.showToast("Tiada rekod pinjaman lewat aktif.");
                 } catch(e) { alert(e.message); }
             },
-
-            function toggleFontWrap(wrap) {
-              const tableCells = document.querySelectorAll('table th, table td');
-                tableCells.forEach(cell => {
-                if (wrap) {
-                    cell.style.wordWrap = 'break-word';
-                    } else {
-                cell.style.wordWrap = 'normal';
-                }
-                });
-            }
-
             addUser: async () => { 
                 const n = document.getElementById('newUserName').value.trim(); 
                 const e = document.getElementById('newUserEmail').value.trim();
                 if(!n || !e) return alert("Sila isi Nama dan ID Email.");
                 try {
-                    const fullEmail = e.includes('@') ? e : e + '@moe.gov.my';
-                    const { error } = await sbClient.from('user_ba').insert([{
-                        id: crypto.randomUUID(),
-                        created_at: new Date().toISOString(),
-                        name: n.toUpperCase(), 
-                        emel: fullEmail
-                    }]); 
+                    const { error } = await sbClient.from('user_ba').insert([{ id: crypto.randomUUID(), created_at: new Date().toISOString(), name: n.toUpperCase(), emel: e.includes('@') ? e : e + '@moe.gov.my' }]); 
                     if(error) throw error;
-                    Utils.showToast("Pengguna Berjaya Ditambah");
-                    Loan.loadData(); 
-                    document.getElementById('newUserName').value=''; 
-                    document.getElementById('newUserEmail').value='';
+                    Utils.showToast("Pengguna Berjaya Ditambah"); Loan.loadData(); document.getElementById('newUserName').value=''; document.getElementById('newUserEmail').value='';
                 } catch(err) { alert("Gagal Simpan Pengguna: " + err.message); }
             },
             addDevice: async () => {
-                const t = document.getElementById('newTag').value.trim(); 
-                const tp = document.getElementById('newType').value.trim(); 
-                const s = document.getElementById('newSerial').value.trim();
+                const t = document.getElementById('newTag').value.trim(); const tp = document.getElementById('newType').value.trim(); const s = document.getElementById('newSerial').value.trim();
                 if(!t) return alert("Sila masukkan Tag Aset.");
                 try {
-                    const { error } = await sbClient.from('device_inventory').insert([{
-                        id: crypto.randomUUID(),
-                        created_at: new Date().toISOString(),
-                        tag: t, 
-                        type: tp, 
-                        serial: s, 
-                        status: 'Tersedia'
-                    }]); 
+                    const { error } = await sbClient.from('device_inventory').insert([{ id: crypto.randomUUID(), created_at: new Date().toISOString(), tag: t, type: tp, serial: s, status: 'Tersedia' }]); 
                     if(error) throw error;
-                    Utils.showToast("Peranti Berjaya Didaftarkan");
-                    Loan.loadData(); 
-                    document.getElementById('newTag').value=''; 
-                    document.getElementById('newType').value='';
-                    document.getElementById('newSerial').value='';
+                    Utils.showToast("Peranti Berjaya Didaftarkan"); Loan.loadData(); document.getElementById('newTag').value=''; document.getElementById('newType').value=''; document.getElementById('newSerial').value='';
                 } catch(err) { alert("Gagal Simpan Peranti: " + err.message); }
             }
         };
