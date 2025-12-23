@@ -1105,7 +1105,6 @@
                 const e = document.getElementById('newUserEmail').value.trim();
                 if(!n || !e) return alert("Validation Error: Name and Email ID are mandatory.");
                 try {
-                    // Removed '@moe.gov.my' automatic appending
                     const { error } = await sbClient.from('user_ba').insert([{ 
                         name: n.toUpperCase(), 
                         emel: e 
@@ -1116,7 +1115,7 @@
                     document.getElementById('newUserName').value=''; 
                     document.getElementById('newUserEmail').value='';
                 } catch(err) { 
-                    alert("Registration Error: " + err.message + "\n\nTip: If this persists, try refreshing the page to clear the schema cache."); 
+                    alert("Registration Error: " + err.message); 
                 }
             },
             addDevice: async () => {
@@ -1125,11 +1124,13 @@
                 const s = document.getElementById('newSerial').value.trim();
                 if(!t) return alert("Validation Error: Asset Tag is mandatory.");
                 try {
+                    // FIX: Explicitly send created_at timestamp to avoid null constraint errors
                     const { error } = await sbClient.from('device_inventory').insert([{ 
                         tag: t, 
                         type: tp, 
                         serial: s, 
-                        status: 'Tersedia' 
+                        status: 'Tersedia',
+                        created_at: new Date().toISOString()
                     }]); 
                     if(error) throw error;
                     Utils.showToast("Inventory update: Asset successfully cataloged"); 
