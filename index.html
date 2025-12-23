@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Rekod IT UTM (v31.2 - View Controls)</title>
+    <title>Sistem Rekod IT UTM (v32.0 - Loan Reminders)</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -282,7 +282,7 @@
                                 <h6 class="font-bold text-gray-800 mb-2 border-b pb-1">Pinjaman Aktif</h6>
                                 <div class="table-container text-[11px]">
                                     <table class="w-full data-table">
-                                        <thead class="bg-gray-100"><tr><th class="p-2 text-left">Peminjam</th><th class="p-2 text-left">Tag</th><th class="p-2 text-left">Tamat</th></tr></thead>
+                                        <thead class="bg-gray-100"><tr><th class="p-2 text-left">Peminjam</th><th class="p-2 text-left">Tag</th><th class="p-2 text-left">Tamat</th><th class="p-2 text-left">Kegunaan</th></tr></thead>
                                         <tbody id="active-loans-body"></tbody>
                                     </table>
                                 </div>
@@ -301,7 +301,7 @@
                         <div class="table-container">
                             <table class="text-[10px] data-table" id="loan-history-table">
                                 <thead class="bg-gray-100 font-bold border-b border-gray-300">
-                                    <tr><th class="p-3 text-left">Tarikh Pinjam</th><th class="p-3 text-left">Peminjam</th><th class="p-3 text-left">Tag Aset</th><th class="p-3 text-left">Tempoh</th><th class="p-3 text-left">Pengeluar</th><th class="p-3 text-left">Penerima</th><th class="p-3 text-left">Tarikh Pulang</th><th class="p-3 text-left">Status</th></tr>
+                                    <tr><th class="p-3 text-left">Tarikh Pinjam</th><th class="p-3 text-left">Peminjam</th><th class="p-3 text-left">Tag Aset</th><th class="p-3 text-left">Tempoh</th><th class="p-3 text-left">Kegunaan</th><th class="p-3 text-left">Pengeluar</th><th class="p-3 text-left">Penerima</th><th class="p-3 text-left">Tarikh Pulang</th><th class="p-3 text-left">Status</th></tr>
                                 </thead>
                                 <tbody id="loan-history-body" class="bg-white"></tbody>
                             </table>
@@ -314,6 +314,8 @@
 
     <!-- UTILITIES -->
     <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-4 rounded-xl shadow-2xl transform translate-y-20 transition-all opacity-0 z-[100]"></div>
+    
+    <!-- MODAL OVERDUE -->
     <div id="overdue-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-[100] p-4">
         <div class="bg-white rounded-xl max-w-2xl w-full p-8 shadow-2xl">
             <h3 class="text-xl font-bold text-red-600 mb-4">SENARAI OVERDUE</h3>
@@ -324,6 +326,18 @@
                 </table>
             </div>
             <button onclick="document.getElementById('overdue-modal').classList.add('hidden')" class="mt-6 bg-gray-800 text-white px-6 py-2 rounded font-bold w-full">TUTUP</button>
+        </div>
+    </div>
+
+    <!-- MODAL REMINDER TEXT -->
+    <div id="reminder-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-[110] p-4">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+            <h4 class="font-bold text-lg mb-4 text-blue-800">Soft Reminder</h4>
+            <div id="reminder-text-area" class="bg-gray-100 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap border mb-4 max-h-60 overflow-y-auto"></div>
+            <div class="flex gap-2">
+                <button id="copy-reminder-btn" class="flex-grow bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700">COPY MESSAGE</button>
+                <button onclick="document.getElementById('reminder-modal').classList.add('hidden')" class="px-6 py-2 border font-bold rounded-lg">CLOSE</button>
+            </div>
         </div>
     </div>
 
@@ -622,7 +636,7 @@
             },
             loadActive: async () => {
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
-                document.getElementById('active-loans-body').innerHTML = data?.map(l => `<tr class="${l.end_date < Utils.getToday() ? 'bg-red-50 text-red-700 font-bold' : 'border-b'}"><td class="p-2">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2">${l.end_date}</td></tr>`).join('') || '';
+                document.getElementById('active-loans-body').innerHTML = data?.map(l => `<tr class="${l.end_date < Utils.getToday() ? 'bg-red-50 text-red-700 font-bold' : 'border-b'}"><td class="p-2">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2">${l.end_date}</td><td class="p-2">${l.usage_type}</td></tr>`).join('') || '';
             },
             submit: async () => {
                 const p = { user_name: document.getElementById('loanUserName').value, device_tag: document.getElementById('deviceSelect').value, start_date: document.getElementById('loanStartDate').value, end_date: document.getElementById('loanEndDate').value, usage_type: document.getElementById('usageType').value, usage_details: document.getElementById('usageDetails').value, status: 'Active', issued_by: STATE.currentUser.email };
@@ -647,7 +661,7 @@
                 } catch(e) { alert("Error: " + e.message); }
             },
             loadHistory: async () => {
-                const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="8" class="p-8 text-center"><div class="loader mx-auto"></div></td></tr>';
+                const tb = document.getElementById('loan-history-body'); tb.innerHTML = '<tr><td colspan="9" class="p-8 text-center"><div class="loader mx-auto"></div></td></tr>';
                 try {
                     const { data } = await sbClient.from('rekod_pinjaman').select('*').order('created_at', {ascending:false});
                     Loan.currentHistory = data || [];
@@ -656,16 +670,16 @@
                         const isActiveLate = l.status === 'Active' && l.end_date < today;
                         const isReturnedLate = l.status === 'Returned' && l.return_date && (new Date(l.return_date).toISOString().split('T')[0] > l.end_date);
                         const isLate = isActiveLate || isReturnedLate;
-                        return `<tr class="${isLate ? 'bg-red-50 text-red-800' : 'border-b hover:bg-gray-50'}"><td class="p-3">${Utils.formatDate(l.created_at)}</td><td class="p-3 font-bold">${l.user_name}</td><td class="p-3 text-blue-600 font-bold">${l.device_tag}</td><td class="p-3">${l.start_date} hingga ${l.end_date}${isActiveLate ? '<div class="text-[9px] font-black text-red-600 mt-1 uppercase">LEWAT</div>' : ''}${isReturnedLate ? '<div class="text-[9px] font-black text-red-600 mt-1 uppercase">PULANG LEWAT</div>' : ''}</td><td class="p-3">${STATE.userMap[l.issued_by?.toLowerCase()] || l.issued_by?.split('@')[0] || '-'}</td><td class="p-3">${STATE.userMap[l.received_by?.toLowerCase()] || l.received_by?.split('@')[0] || '-'}</td><td class="p-3">${l.return_date ? Utils.formatDate(l.return_date) : '-'}</td><td class="p-3 font-black uppercase text-[8px]"><span class="${l.status === 'Active' ? 'text-blue-600' : 'text-gray-500'}">${l.status}</span></td></tr>`;
-                    }).join('') || '<tr><td colspan="8" class="p-4">Tiada sejarah dijumpai.</td></tr>';
-                } catch(e) { tb.innerHTML = '<tr><td colspan="8">Gagal memuatkan sejarah.</td></tr>'; }
+                        return `<tr class="${isLate ? 'bg-red-50 text-red-800' : 'border-b hover:bg-gray-50'}"><td class="p-3">${Utils.formatDate(l.created_at)}</td><td class="p-3 font-bold">${l.user_name}</td><td class="p-3 text-blue-600 font-bold">${l.device_tag}</td><td class="p-3">${l.start_date} hingga ${l.end_date}${isActiveLate ? '<div class="text-[9px] font-black text-red-600 mt-1 uppercase">LEWAT</div>' : ''}${isReturnedLate ? '<div class="text-[9px] font-black text-red-600 mt-1 uppercase">PULANG LEWAT</div>' : ''}</td><td class="p-3">${l.usage_type}</td><td class="p-3">${STATE.userMap[l.issued_by?.toLowerCase()] || l.issued_by?.split('@')[0] || '-'}</td><td class="p-3">${STATE.userMap[l.received_by?.toLowerCase()] || l.received_by?.split('@')[0] || '-'}</td><td class="p-3">${l.return_date ? Utils.formatDate(l.return_date) : '-'}</td><td class="p-3 font-black uppercase text-[8px]"><span class="${l.status === 'Active' ? 'text-blue-600' : 'text-gray-500'}">${l.status}</span></td></tr>`;
+                    }).join('') || '<tr><td colspan="9" class="p-4">Tiada sejarah dijumpai.</td></tr>';
+                } catch(e) { tb.innerHTML = '<tr><td colspan="9">Gagal memuatkan sejarah.</td></tr>'; }
             },
             exportExcel: async () => {
                 const today = Utils.getToday();
                 const formatted = Loan.currentHistory.map(l => {
                     const isActiveLate = l.status === 'Active' && l.end_date < today;
                     const isReturnedLate = l.status === 'Returned' && l.return_date && (new Date(l.return_date).toISOString().split('T')[0] > l.end_date);
-                    return { 'Tarikh Pinjam': Utils.formatDate(l.created_at), 'Peminjam': l.user_name, 'Tag Aset': l.device_tag, 'Tempoh Pinjaman': `${l.start_date} - ${l.end_date} ${isActiveLate?'(LEWAT)':isReturnedLate?'(PULANG LEWAT)':''}`, 'Pegawai Pengeluar': STATE.userMap[l.issued_by?.toLowerCase()] || l.issued_by, 'Pegawai Penerima': STATE.userMap[l.received_by?.toLowerCase()] || l.received_by || '-', 'Tarikh Pulang': l.return_date ? Utils.formatDate(l.return_date) : '-', 'Status': l.status };
+                    return { 'Tarikh Pinjam': Utils.formatDate(l.created_at), 'Peminjam': l.user_name, 'Tag Aset': l.device_tag, 'Tempoh Pinjaman': `${l.start_date} - ${l.end_date} ${isActiveLate?'(LEWAT)':isReturnedLate?'(PULANG LEWAT)':''}`, 'Kegunaan': l.usage_type, 'Pegawai Pengeluar': STATE.userMap[l.issued_by?.toLowerCase()] || l.issued_by, 'Pegawai Penerima': STATE.userMap[l.received_by?.toLowerCase()] || l.received_by || '-', 'Tarikh Pulang': l.return_date ? Utils.formatDate(l.return_date) : '-', 'Status': l.status };
                 });
                 const ws = XLSX.utils.json_to_sheet(formatted);
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "HistoryPinjaman");
@@ -676,10 +690,25 @@
                     const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
                     const overdue = data?.filter(l => l.end_date < Utils.getToday());
                     if (overdue?.length) {
-                        document.getElementById('overdue-list-body').innerHTML = overdue.map(l => `<tr><td class="p-2 font-bold">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2 text-red-600 font-bold">${l.end_date}</td><td class="p-2 text-center"><button class="bg-orange-500 text-white px-2 py-1 rounded text-[9px] font-bold">SEND ALERT</button></td></tr>`).join('');
+                        document.getElementById('overdue-list-body').innerHTML = overdue.map(l => `<tr><td class="p-2 font-bold">${l.user_name}</td><td class="p-2">${l.device_tag}</td><td class="p-2 text-red-600 font-bold">${l.end_date}</td><td class="p-2 text-center"><button onclick='Loan.sendSoftReminder(${JSON.stringify(l)})' class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-[9px] font-bold">SEND ALERT</button></td></tr>`).join('');
                         document.getElementById('overdue-modal').classList.remove('hidden');
                     } else Utils.showToast("Tiada rekod pinjaman lewat aktif.");
                 } catch(e) { alert(e.message); }
+            },
+            sendSoftReminder: (loan) => {
+                const msg = `Salam sejahtera Tuan/Puan ${loan.user_name},\n\nHarap maklum bahawa tempoh pinjaman peralatan ICT bagi Tag Aset: ${loan.device_tag} telah tamat pada ${loan.end_date}.\n\nMohon kerjasama Tuan/Puan untuk memulangkan peralatan tersebut ke Unit Teknologi Maklumat (UTM) dengan kadar segera bagi tujuan rekod dan kegunaan kakitangan lain.\n\nSekiranya terdapat keperluan penyambungan, sila hubungi kami untuk tindakan lanjut.\n\nTerima kasih.\n\n- Unit Teknologi Maklumat (UTM)`;
+                document.getElementById('reminder-text-area').innerText = msg;
+                document.getElementById('reminder-modal').classList.remove('hidden');
+                
+                document.getElementById('copy-reminder-btn').onclick = () => {
+                    const el = document.createElement('textarea');
+                    el.value = msg;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    Utils.showToast("Message copied to clipboard!");
+                };
             },
             addUser: async () => { 
                 const n = document.getElementById('newUserName').value.trim(); 
