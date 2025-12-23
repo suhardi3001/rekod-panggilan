@@ -371,7 +371,7 @@
                     </div>
                     
                     <div class="flex flex-wrap border-b border-slate-50 bg-slate-50/50 p-2 overflow-x-auto">
-                        <button onclick="Navigation.switchSubTab('loan', 'borrow')" id="tab-loan-borrow" class="px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all tab-active-sub">Pinjaman Baru</button>
+                        <button onclick="Navigation.switchSubSubTab('loan', 'borrow')" id="tab-loan-borrow" class="px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all tab-active-sub">Pinjaman Baru</button>
                         <button onclick="Navigation.switchSubTab('loan', 'return')" id="tab-loan-return" class="px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all text-slate-400">Pemulangan</button>
                         <button onclick="Navigation.switchSubTab('loan', 'admin')" id="tab-loan-admin" class="px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all text-slate-400">Inventory & Admin</button>
                         <button onclick="Navigation.switchSubTab('loan', 'history')" id="tab-loan-history" class="px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all text-slate-400">Arkib Rekod</button>
@@ -571,9 +571,6 @@
     </div>
 
     <script>
-        // --- ALL JS LOGIC REMAINS IDENTICAL TO YOURS ---
-        // (Functionally identical, purely IDs and Logic matched from original)
-        
         const CONFIG = { supabaseUrl: 'https://objxfgosatmasjjifkkg.supabase.co', supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw' };
         const STATE = { currentUser: null, searchTimeout: null, baseFontSize: 16, userMap: {}, currentViewMode: 'default' };
         const sbClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
@@ -599,7 +596,14 @@
                 } 
             },
             formatDate: (d) => d ? new Date(d).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
-            getToday: () => new Date().toISOString().split('T')[0],
+            getToday: () => {
+                // Returns YYYY-MM-DD in LOCAL TIME (fix for UTC issue)
+                const d = new Date();
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            },
             showPage: (pageId) => {
                 ['index-page', 'login-page', 'main-page'].forEach(p => document.getElementById(p).classList.add('hidden-section'));
                 document.getElementById(pageId).classList.remove('hidden-section');
@@ -877,7 +881,8 @@
             },
             loadActive: async () => {
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
-                document.getElementById('active-loans-body').innerHTML = data?.map(l => `<tr class="${l.end_date < Utils.getToday() ? 'bg-rose-50 text-rose-700 font-bold' : 'border-b border-slate-50'} hover:bg-slate-50 transition-all"><td class="p-4 uppercase font-bold text-slate-700">${l.user_name}</td><td class="p-4 font-black text-indigo-600 tracking-widest">${l.device_tag}</td><td class="p-4">${l.end_date}</td><td class="p-4 text-slate-400 font-bold">${l.usage_type}</td></tr>`).join('') || '';
+                // Ensure date comparison uses local time and bold red color
+                document.getElementById('active-loans-body').innerHTML = data?.map(l => `<tr class="${l.end_date < Utils.getToday() ? 'bg-rose-100 text-rose-700 font-bold' : 'border-b border-slate-50'} hover:bg-slate-50 transition-all"><td class="p-4 uppercase font-bold text-slate-700">${l.user_name}</td><td class="p-4 font-black text-indigo-600 tracking-widest">${l.device_tag}</td><td class="p-4">${l.end_date}</td><td class="p-4 text-slate-400 font-bold">${l.usage_type}</td></tr>`).join('') || '';
             },
             submit: async () => {
                 const p = { user_name: document.getElementById('loanUserName').value, device_tag: document.getElementById('deviceSelect').value, start_date: document.getElementById('loanStartDate').value, end_date: document.getElementById('loanEndDate').value, usage_type: document.getElementById('usageType').value, usage_details: document.getElementById('usageDetails').value, status: 'Active', issued_by: STATE.currentUser.email };
@@ -934,13 +939,14 @@
                     ]);
 
                     const userEmelMap = {};
-                    users?.forEach(u => userEmelMap[u.name.toUpperCase()] = u.emel);
+                    // Improved matching: trim spaces and uppercase
+                    users?.forEach(u => userEmelMap[u.name.trim().toUpperCase()] = u.emel);
 
                     const overdue = loans?.filter(l => l.end_date < Utils.getToday());
                     if (overdue?.length) {
                         const body = document.getElementById('overdue-list-body');
                         body.innerHTML = overdue.map(l => {
-                            const borrowerEmail = userEmelMap[l.user_name.toUpperCase()] || 'N/A';
+                            const borrowerEmail = userEmelMap[l.user_name.trim().toUpperCase()] || 'N/A';
                             return `
                                 <tr class="border-b border-slate-50 hover:bg-rose-50/30 transition-all">
                                     <td class="p-4 font-black uppercase text-slate-800">${l.user_name}</td>
@@ -959,16 +965,22 @@
                     } else Utils.showToast("Compliance Check: No active overdue loans detected.");
                 } catch(e) { alert(e.message); }
             },
-            emailAll: (list, emelMap) => {
-                const count = list.filter(l => emelMap[l.user_name.toUpperCase()]).length;
+            emailAll: async (list, emelMap) => {
+                const count = list.filter(l => emelMap[l.user_name.trim().toUpperCase()]).length;
                 if(count === 0) return alert("System Error: No valid email addresses found for overdue borrowers.");
-                if(!confirm(`Send overdue notification emails to ${count} borrowers?`)) return;
+                if(!confirm(`Warning: This will attempt to open ${count} email windows. Some browsers may block this. Continue?`)) return;
                 
-                list.forEach(l => {
-                    const emel = emelMap[l.user_name.toUpperCase()];
-                    if(emel) Loan.sendEmailAlert(l, emel, true);
-                });
-                Utils.showToast(`${count} email alerts triggered.`);
+                let emailsSent = 0;
+                for (const l of list) {
+                    const emel = emelMap[l.user_name.trim().toUpperCase()];
+                    if(emel) {
+                        Loan.sendEmailAlert(l, emel, true);
+                        emailsSent++;
+                        // Small delay to try and mitigate browser blocking
+                        await new Promise(r => setTimeout(r, 800));
+                    }
+                }
+                Utils.showToast(`${emailsSent} email alerts triggered.`);
             },
             sendEmailAlert: (loan, email, silent = false) => {
                 if (email === 'N/A' || !email) {
@@ -978,7 +990,8 @@
                 const subject = encodeURIComponent(`[PERINGATAN] Pemulangan Peralatan ICT - ${loan.device_tag}`);
                 const body = encodeURIComponent(`Salam sejahtera Tuan/Puan ${loan.user_name},\n\nHarap maklum bahawa tempoh pinjaman peralatan ICT bagi Tag Aset: ${loan.device_tag} telah tamat pada ${loan.end_date}.\n\nMohon kerjasama Tuan/Puan untuk memulangkan peralatan tersebut ke Unit Teknologi Maklumat (UTM) dengan kadar segera.\n\nSekiranya terdapat keperluan penyambungan, sila hubungi kami untuk tindakan lanjut.\n\nTerima kasih.\n\n- Unit Teknologi Maklumat (UTM)`);
                 
-                window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+                // Add rel=noopener to prevent security issues and potential blocks
+                window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank', 'noopener,noreferrer');
                 if(!silent) Utils.showToast("Email alert triggered.");
             },
             sendSoftReminder: (loan) => {
