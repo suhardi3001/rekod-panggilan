@@ -595,7 +595,7 @@
             supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw',
             
             /* --- EMAIL AUTOMATION KEYS (EmailJS) --- */
-            emailjsKey: '', // Go to EmailJS dashboard -> Account -> Public Key
+            emailjsKey: 'V13_yx5sLEDjTVgCE', // Go to EmailJS dashboard -> Account -> Public Key
             emailjsServiceID: 'default_service',
             emailjsTemplateID: 'template_overdue' 
             /* --------------------------------------- */
@@ -733,7 +733,9 @@
                         const emel = u.emel || u.email || u.Emel || u.Email;
                         if(emel && name) {
                             STATE.userMap[emel.toLowerCase()] = name; 
-                            STATE.userEmails[name.toUpperCase()] = emel.toLowerCase();
+                            // Append @moe.gov.my to emel for automated overdue email alerts
+                            const fullEmail = emel.toLowerCase().includes('@') ? emel.toLowerCase() : emel.toLowerCase() + "@moe.gov.my";
+                            STATE.userEmails[name.toUpperCase()] = fullEmail;
                         }
                     });
                     
