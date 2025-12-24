@@ -13,7 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- NO-REPLY EMAIL SENDER SCRIPT (EmailJS) -->
+    <!-- AUTOMATED NO-REPLY SENDER SCRIPT (EmailJS) -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -512,7 +512,7 @@
                         <div id="loan-history-section" class="hidden-section space-y-6">
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                 <div>
-                                    <h6 class="font-extrabold text-slate-800 text-lg tracking-tight">Arkib Sejarah Pinjaman</h6>
+                                    <h6 class="font-extrabold text-slate-800 text-lg tracking-tight">Arkib Rekod Pinjaman</h6>
                                     <p class="text-slate-400 text-xs font-medium uppercase tracking-widest mt-1">Full Transaction Log</p>
                                 </div>
                                 <button onclick="Loan.exportExcel()" class="btn-hover bg-emerald-600 text-white px-6 py-3 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-emerald-700 shadow-xl shadow-emerald-100 uppercase tracking-widest">
@@ -574,7 +574,7 @@
 
             <div class="mt-6 flex gap-4 shrink-0">
                 <button id="blast-reminders-btn" class="btn-hover flex-grow bg-rose-600 text-white px-8 py-4 rounded-2xl font-black tracking-widest transition-all uppercase flex items-center justify-center gap-3">
-                    <i data-lucide="mail" class="w-5 h-5"></i> Blast Bundle Reminders (Auto)
+                    <i data-lucide="mail" class="w-5 h-5"></i> Blast Auto-Reminders (No-Reply)
                 </button>
                 <button onclick="document.getElementById('overdue-modal').classList.add('hidden')" class="btn-hover px-10 py-4 border border-slate-200 font-black rounded-2xl text-slate-400 hover:bg-slate-50 tracking-widest uppercase">Tutup</button>
             </div>
@@ -596,10 +596,14 @@
         const CONFIG = { 
             supabaseUrl: 'https://objxfgosatmasjjifkkg.supabase.co', 
             supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ianhmZ29zYXRtYXNqamlma2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTI1MDYsImV4cCI6MjA4MDU4ODUwNn0.Y6nVvZLbqXu4yvDaL1xXrbN7Kdl73Z-Y5HC5z56vzmw',
-            emailjsKey: '', // Standard EmailJS public key would go here
-            emailjsServiceID: '',
-            emailjsTemplateID: ''
+            
+            /* --- EMAIL AUTOMATION KEYS (EmailJS) --- */
+            emailjsKey: '', // Go to EmailJS dashboard -> Account -> Public Key
+            emailjsServiceID: 'default_service',
+            emailjsTemplateID: 'template_overdue' 
+            /* --------------------------------------- */
         };
+
         const STATE = { currentUser: null, searchTimeout: null, baseFontSize: 16, userMap: {}, userEmails: {}, currentViewMode: 'default' };
         const sbClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
 
@@ -648,29 +652,31 @@
             init: () => {
                 if (CONFIG.emailjsKey) {
                     emailjs.init(CONFIG.emailjsKey);
-                    Utils.log("Email Service Initialized (EmailJS)");
+                    Utils.log("Email System: READY (Automated Service Enabled)");
                 } else {
-                    Utils.log("Email Service Mode: FALLBACK (Mail Client Bridge)");
+                    Utils.log("Email System: STANDBY (Awaiting configuration keys)");
                 }
             },
-            send: async (toEmail, toName, message) => {
+            sendNoReply: async (toEmail, toName, message) => {
                 if (!CONFIG.emailjsKey) {
-                    // Force mailto fallback if no key
+                    // Safety Fallback to Mail Client Bridge
                     const subject = encodeURIComponent("Peringatan Mesra: Pemulangan Aset IT UTM");
                     const body = encodeURIComponent(message);
                     window.location.href = `mailto:${toEmail}?subject=${subject}&body=${body}`;
-                    return { status: 'fallback' };
+                    return { status: 'bridged' };
                 }
                 
                 try {
+                    // Professional No-Reply Sending Configuration
                     return await emailjs.send(CONFIG.emailjsServiceID, CONFIG.emailjsTemplateID, {
                         to_email: toEmail,
                         to_name: toName,
+                        system_signature: "Unit Teknologi Maklumat UTM (Auto-Alert)",
                         message: message,
-                        reply_to: "no-reply@utm.my"
+                        reply_to: "no-reply@utm.my" 
                     });
                 } catch (err) {
-                    Utils.log("Email sending failed: " + err.text);
+                    Utils.log("Auto-alert system encountered a protocol error.");
                     throw err;
                 }
             }
@@ -733,6 +739,11 @@
                             STATE.userEmails[name.toUpperCase()] = emel.toLowerCase();
                         }
                     });
+                    
+                    // --- AUTOMATION TRIGGER ---
+                    // Run a silent health check for overdue loans on background load
+                    Loan.checkOverdueLoans(false); 
+                    
                 } catch (err) { Utils.log("Data Load Error: " + err.message); }
                 
                 Utils.showPage('main-page');
@@ -1074,7 +1085,7 @@
                                 <td class="p-4 text-rose-600 font-bold">${dates}</td>
                                 <td class="p-4 text-center">
                                     <button onclick='Loan.sendSoftReminder(${JSON.stringify(items)})' class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all flex items-center gap-2 mx-auto">
-                                        <i data-lucide="mail" class="w-3 h-3"></i> Reminder
+                                        <i data-lucide="mail" class="w-3 h-3"></i> Auto-Reminder
                                     </button>
                                 </td>
                             </tr>`;
@@ -1091,13 +1102,13 @@
                         Utils.showToast("Tiada pinjaman lewat dikesan.");
                     }
                     if (typeof lucide !== 'undefined') lucide.createIcons();
-                } catch(e) { alert(e.message); }
+                } catch(e) { Utils.log("Auto-Check Error: " + e.message); }
             },
             sendSoftReminder: async (loans) => {
                 const user = loans[0].user_name;
-                const assetList = loans.map(l => `- ${l.device_tag} (Tamat: ${l.end_date})`).join('\n');
+                const assetList = loans.map(l => `- ${l.device_tag} (Jangkaan Pulang: ${l.end_date})`).join('\n');
                 
-                const msg = `Salam sejahtera ${user},\n\nKami harap anda berada dalam keadaan baik. Ini adalah peringatan mesra (soft reminder) mengenai pemulangan aset IT berikut yang telah tamat tempoh pinjaman:\n\n${assetList}\n\nMohon kerjasama anda untuk memulangkan aset tersebut ke Unit IT bagi melancarkan urusan inventori. Abaikan mesej ini jika anda baru sahaja memulangkannya.\n\nTerima kasih atas kerjasama anda.\n\n---\nIni adalah pesanan automatik (No-Reply).`;
+                const msg = `Salam sejahtera ${user},\n\nSistem mengesan peminjaman aset IT berikut masih belum dipulangkan ke Unit IT:\n\n${assetList}\n\nKami amat menghargai kerjasama anda untuk memulangkan aset tersebut bagi melancarkan urusan inventori kami. Abaikan mesej ini sekiranya anda baru sahaja memulangkannya.\n\nTerima kasih.\n\n---\nUTM IT AUTO-ALERT SYSTEM\n(Ini adalah pesanan no-reply automatik)`;
                 
                 document.getElementById('reminder-text-area').innerText = msg;
                 document.getElementById('reminder-modal').classList.remove('hidden');
@@ -1105,41 +1116,41 @@
                 document.getElementById('copy-reminder-btn').onclick = async () => {
                     const email = STATE.userEmails[user.toUpperCase()];
                     if (email) {
-                        Utils.showToast("Menghantar emel...");
+                        Utils.showToast("Menghantar auto-alert...");
                         try {
-                            await EmailService.send(email, user, msg);
-                            Utils.showToast("Emel automatik telah dihantar.");
+                            await EmailService.sendNoReply(email, user, msg);
+                            Utils.showToast("Peringatan telah dihantar secara automatik.");
                         } catch (e) {
-                            Utils.showToast("Ralat penghantaran. Membuka mail client...");
+                            Utils.showToast("Ralat penghantaran automatik. Sila gunakan Mailto.");
                         }
                     } else {
-                        Utils.showToast("Emel tidak ditemui. Membuka mail client...");
-                        EmailService.send(null, user, msg);
+                        Utils.showToast("Tiada rekod emel. Membuka mailto fallback...");
+                        EmailService.sendNoReply(null, user, msg);
                     }
                     document.getElementById('reminder-modal').classList.add('hidden');
                 };
             },
             blastBundleReminders: async (grouped) => {
                 let processed = 0;
-                Utils.showToast(`Memproses ${Object.keys(grouped).length} peminjam...`);
+                Utils.showToast(`Memproses ${Object.keys(grouped).length} peringatan no-reply...`);
                 
                 for (const [user, items] of Object.entries(grouped)) {
                     const email = STATE.userEmails[user.toUpperCase()];
                     if (email) {
                         const assetList = items.map(l => `- ${l.device_tag} (Tamat: ${l.end_date})`).join('\n');
-                        const msg = `Salam sejahtera ${user},\n\nIni adalah peringatan mesra (soft reminder) mengenai pemulangan aset IT berikut yang telah tamat tempoh pinjaman:\n\n${assetList}\n\nMohon kerjasama anda untuk memulangkan aset tersebut ke Unit IT secepat mungkin.\n\nTerima kasih.\n\n---\nIni adalah pesanan automatik (No-Reply).`;
+                        const msg = `Salam sejahtera ${user},\n\nIni adalah peringatan mesra automatik (soft reminder) mengenai pemulangan aset IT berikut yang telah tamat tempoh pinjaman:\n\n${assetList}\n\nMohon kerjasama anda untuk memulangkan aset tersebut ke Unit IT secepat mungkin.\n\nTerima kasih.\n\n---\nUTM IT AUTO-ALERT SYSTEM\n(No-Reply Message)`;
                         
                         try {
-                            await EmailService.send(email, user, msg);
+                            await EmailService.sendNoReply(email, user, msg);
                             processed++;
                         } catch (e) {
-                            Utils.log(`Gagal hantar ke ${user}`);
+                            Utils.log(`Penyampaian gagal kepada: ${user}`);
                         }
-                        // Small delay to prevent rate limit
-                        await new Promise(r => setTimeout(r, 1000));
+                        // Queue delay (1.2s) to ensure external server processes the automated blast
+                        await new Promise(r => setTimeout(r, 1200));
                     }
                 }
-                Utils.showToast(`Blast Berjaya: ${processed} emel peringatan dihantar.`);
+                Utils.showToast(`Auto-Blast Selesai: ${processed} emel peringatan diproses.`);
                 document.getElementById('overdue-modal').classList.add('hidden');
             },
             addUser: async () => { 
