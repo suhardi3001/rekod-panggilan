@@ -596,8 +596,8 @@
             
             /* --- EMAIL AUTOMATION KEYS (EmailJS) --- */
             emailjsKey: 'V13_yx5sLEDjTVgCE', 
-            emailjsServiceID: 'service_gxvfxia', // Sila isi dengan Service ID anda (Contoh: service_abc123)
-            emailjsTemplateID: 'template_overdue' 
+            emailjsServiceID: 'service_gxvfxia', 
+            emailjsTemplateID: 'template_pe6hbwq' // Sila isi dengan Template ID anda (Contoh: template_abc123)
             /* --------------------------------------- */
         };
 
@@ -666,6 +666,10 @@
                 if (!CONFIG.emailjsServiceID) {
                     Utils.log(`CRITICAL: Service ID is empty. Please fill in CONFIG.emailjsServiceID.`);
                     throw new Error("Missing Service ID");
+                }
+                if (!CONFIG.emailjsTemplateID) {
+                    Utils.log(`CRITICAL: Template ID is empty. Please fill in CONFIG.emailjsTemplateID.`);
+                    throw new Error("Missing Template ID");
                 }
                 
                 Utils.log(`Requesting EmailJS to send automated alert to: ${toEmail}...`);
