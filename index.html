@@ -466,11 +466,11 @@
                                         <i data-lucide="alert-triangle" class="w-5 h-5"></i> Semak Pinjaman Lewat
                                     </button>
                                     <div class="border border-slate-100 p-8 rounded-3xl bg-white shadow-sm space-y-6">
-                                        <h6 class="font-extrabold text-slate-800 flex items-center gap-2 pb-4 border-b border-slate-50 uppercase tracking-widest text-xs">Pendaftaran Pengguna</h6>
+                                        <h6 class="font-extrabold text-slate-800 flex items-center gap-2 pb-4 border-b border-slate-50 uppercase tracking-widest text-xs">Pendaftaran Pengguna Baru</h6>
                                         <div class="space-y-4">
                                             <input id="newUserName" class="input-modern w-full px-4 py-3 rounded-xl text-sm uppercase font-semibold" placeholder="Nama Penuh (Huruf Besar)">
                                             <div class="relative">
-                                                <input id="newUserEmail" class="input-modern w-full px-4 py-3 rounded-xl text-sm font-medium" placeholder="Emel Penuh (Cth: ali@utm.my)">
+                                                <input id="newUserEmail" class="input-modern w-full px-4 py-3 rounded-xl text-sm font-medium" placeholder="Emel tanpa @moe.gov.my ">
                                             </div>
                                         </div>
                                         <button onclick="Loan.addUser()" class="btn-hover w-full bg-slate-800 hover:bg-black text-white py-3.5 rounded-xl font-bold text-sm shadow-xl shadow-slate-200 uppercase tracking-wide">Daftar Pengguna</button>
@@ -496,10 +496,10 @@
                                         <table class="w-full data-table">
                                             <thead class="bg-white border-b border-slate-100">
                                                 <tr>
-                                                    <th class="p-4 text-left font-extrabold uppercase tracking-widest">Peminjam</th>
+                                                    <th class="p-4 text-left font-extrabold uppercase tracking-widest">Nama Peminjam</th>
                                                     <th class="p-4 text-left font-extrabold uppercase tracking-widest">Tag Aset</th>
-                                                    <th class="p-4 text-left font-extrabold uppercase tracking-widest">Jangka Pulang</th>
-                                                    <th class="p-4 text-left font-extrabold uppercase tracking-widest">Kegunaan</th>
+                                                    <th class="p-4 text-left font-extrabold uppercase tracking-widest">Tarikh Pemulangan</th>
+                                                    <th class="p-4 text-left font-extrabold uppercase tracking-widest">Lokasi Kegunaan</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="active-loans-body"></tbody>
