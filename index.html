@@ -596,7 +596,7 @@
             
             /* --- EMAIL AUTOMATION KEYS (EmailJS) --- */
             emailjsKey: 'V13_yx5sLEDjTVgCE', 
-            emailjsServiceID: 'service_default', 
+            emailjsServiceID: 'service_gxvfxia', // Sila isi dengan Service ID anda (Contoh: service_abc123)
             emailjsTemplateID: 'template_overdue' 
             /* --------------------------------------- */
         };
@@ -656,29 +656,39 @@
             },
             sendNoReply: async (toEmail, toName, message) => {
                 if (!CONFIG.emailjsKey || typeof emailjs === 'undefined') {
-                    Utils.log(`Automation Key Error. Opening Mailto for ${toName}...`);
+                    Utils.log(`Automation Error: Library or Key not found. Opening Mailto for ${toName}...`);
                     const subject = encodeURIComponent("Peringatan Mesra: Pemulangan Aset IT UTM");
                     const body = encodeURIComponent(message);
                     window.location.href = `mailto:${toEmail}?subject=${subject}&body=${body}`;
                     return { status: 'bridged' };
                 }
                 
-                Utils.log(`Triggering EmailJS Send Request to: ${toEmail}...`);
+                if (!CONFIG.emailjsServiceID) {
+                    Utils.log(`CRITICAL: Service ID is empty. Please fill in CONFIG.emailjsServiceID.`);
+                    throw new Error("Missing Service ID");
+                }
+                
+                Utils.log(`Requesting EmailJS to send automated alert to: ${toEmail}...`);
                 try {
-                    const result = await emailjs.send(CONFIG.emailjsServiceID, CONFIG.emailjsTemplateID, {
-                        to_email: toEmail,
-                        to_name: toName,
-                        system_signature: "Unit Teknologi Maklumat UTM (Auto-Alert)",
-                        message: message,
-                        reply_to: "no-reply@utm.my" 
-                    });
-                    Utils.log(`Email Sent Successfully! Status: ${result.status}`);
+                    const result = await emailjs.send(
+                        CONFIG.emailjsServiceID, 
+                        CONFIG.emailjsTemplateID, 
+                        {
+                            to_email: toEmail,
+                            to_name: toName,
+                            system_signature: "Unit Teknologi Maklumat UTM (Auto-Alert)",
+                            message: message,
+                            reply_to: "no-reply@utm.my" 
+                        },
+                        CONFIG.emailjsKey
+                    );
+                    Utils.log(`Automated Email Sent Successfully! Status: ${result.status}`);
                     return result;
                 } catch (err) {
-                    const errMsg = err.text || err.message || "Unknown protocol error";
-                    Utils.log(`CRITICAL EMAIL ERROR: ${errMsg}`);
-                    console.error("EmailJS Error details:", err);
-                    throw err;
+                    const errMsg = err.text || err.message || JSON.stringify(err);
+                    Utils.log(`CRITICAL EMAIL SERVICE ERROR: ${errMsg}`);
+                    console.error("Full Debug Details:", err);
+                    throw err; 
                 }
             }
         };
@@ -1142,12 +1152,12 @@
                             await EmailService.sendNoReply(email, user, msg);
                             Utils.showToast("Berjaya! Peringatan telah dihantar secara automatik.");
                         } catch (e) {
-                            Utils.showToast("Ralat teknikal. Membuka mod 'mailto' sebagai sandaran...");
+                            Utils.showToast("Ralat teknikal EmailJS. Membuka sandaran 'mailto'...");
                             EmailService.sendNoReply(null, user, msg);
                         }
                     } else {
                         Utils.log(`Peringatan: Nama "${user}" tiada dalam pemetaan emel. Gunakan mailto.`);
-                        Utils.showToast("Tiada rekod emel. Membuka aplikasi emel peranti...");
+                        Utils.showToast("Tiada rekod emel. Membuka sandaran 'mailto'...");
                         EmailService.sendNoReply(null, user, msg);
                     }
                     document.getElementById('reminder-modal').classList.add('hidden');
@@ -1173,7 +1183,6 @@
                             failedCount++;
                             Utils.log(`Gagal hantar kepada: ${user}`);
                         }
-                        // Queue delay (1.8s) to avoid spam filters
                         await new Promise(r => setTimeout(r, 1800));
                     } else {
                         failedCount++;
