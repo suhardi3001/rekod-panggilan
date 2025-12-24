@@ -410,9 +410,10 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div class="col-span-full md:col-span-1">
                                         <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Peminjam</label>
-                                        <!-- FIX: Added autocomplete="off" and changed name/id slightly to avoid password manager triggers -->
-                                        <input type="text" id="loanUserName" name="search_borrower_field" list="userList" autocomplete="off" class="input-modern w-full px-4 py-3 rounded-xl bg-white font-semibold" placeholder="Nama penuh peminjam...">
+                                        <!-- FIX: Added autocomplete="new-password" to aggressively block browser password fill -->
+                                        <input type="text" id="loanUserName" name="borrower_name_input_field" list="userList" autocomplete="new-password" class="input-modern w-full px-4 py-3 rounded-xl bg-white font-semibold" placeholder="Taip nama peminjam...">
                                         <datalist id="userList"></datalist>
+                                        <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-widest">* Sila pilih dari senarai atau taip manual jika tiada.</p>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Peranti Tersedia</label>
@@ -679,8 +680,8 @@
                     const { data: users, error } = await sbClient.from('user_ba').select('*');
                     if (error) Utils.log("Load staff list failed: " + error.message);
                     users?.forEach(u => { 
-                        const name = u.name || u.nama;
-                        const emel = u.emel || u.email;
+                        const name = u.name || u.nama || u.Name || u.Nama;
+                        const emel = u.emel || u.email || u.Emel || u.Email;
                         if(emel && name) STATE.userMap[emel.toLowerCase()] = name; 
                     });
                 } catch (err) { Utils.log("Data Load Error: " + err.message); }
@@ -920,32 +921,36 @@
                 const startEl = document.getElementById('loanStartDate');
                 if (startEl) startEl.min = Utils.getToday();
                 try {
+                    // FIX: Fetch table without sort key to avoid column mismatch errors
                     const { data: u, error: uErr } = await sbClient.from('user_ba').select('*');
                     
                     if (uErr) {
-                        Utils.log("Peminjam load failed (user_ba): " + uErr.message);
+                        Utils.log("Peminjam fetch error: " + uErr.message);
                     }
                     
                     const dl = document.getElementById('userList'); 
                     if (dl) {
                         dl.innerHTML = '';
-                        if (u) {
+                        if (u && u.length > 0) {
+                            Utils.log(`Success: Found ${u.length} users in 'user_ba'.`);
+                            // Robust key extraction (handles name/nama/Name/Nama)
                             const sortedUsers = u.sort((a, b) => {
-                                const nameA = (a.name || a.nama || "").toUpperCase();
-                                const nameB = (b.name || b.nama || "").toUpperCase();
+                                const nameA = (a.name || a.nama || a.Name || a.Nama || "").toUpperCase();
+                                const nameB = (b.name || b.nama || b.Name || b.Nama || "").toUpperCase();
                                 return nameA.localeCompare(nameB);
                             });
                             
                             sortedUsers.forEach(i => {
-                                const val = i.name || i.nama;
+                                const val = i.name || i.nama || i.Name || i.Nama;
                                 if (val) {
                                     const option = document.createElement('option');
                                     option.value = val;
                                     dl.appendChild(option);
                                 }
                             });
+                        } else {
+                            Utils.log("Warning: 'user_ba' table returned 0 results or is empty.");
                         }
-                        Utils.log(`Peminjam list ready: ${u?.length || 0} users.`);
                     }
                     
                     // Load Devices
@@ -964,7 +969,7 @@
                         ac?.forEach(l => rs.appendChild(new Option(`${l.device_tag} [${l.user_name}]`, l.device_tag)));
                     }
                     Loan.loadActive();
-                } catch (e) { Utils.log("Loan Data Init Error: " + e.message); }
+                } catch (e) { Utils.log("Loan Data Exception: " + e.message); }
             },
             loadActive: async () => {
                 const { data } = await sbClient.from('rekod_pinjaman').select('*').eq('status','Active');
@@ -1021,7 +1026,7 @@
                     const overdue = loans?.filter(l => l.end_date < Utils.getToday());
                     if (overdue?.length) {
                         const body = document.getElementById('overdue-list-body');
-                        body.innerHTML = overdue.map(l => `<tr class="border-b border-slate-50"><td class="p-4 font-bold">${l.user_name}</td><td class="p-4 font-black text-indigo-600">${l.device_tag}</td><td class="p-4 text-rose-600">${l.end_date}</td><td class="p-4">Staff Member</td><td class="p-4"><button onclick='Loan.sendSoftReminder(${JSON.stringify(l)})' class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs">Copy Reminder</button></td></tr>`).join('');
+                        body.innerHTML = overdue.map(l => `<tr class="border-b border-slate-50"><td class="p-4 font-bold">${l.user_name}</td><td class="p-4 font-black text-indigo-600">${l.device_tag}</td><td class="p-4 text-rose-600">${l.end_date}</td><td class="p-4"><button onclick='Loan.sendSoftReminder(${JSON.stringify(l)})' class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs">Copy Reminder</button></td></tr>`).join('');
                         document.getElementById('overdue-modal').classList.remove('hidden');
                     } else Utils.showToast("Tiada pinjaman lewat dikesan.");
                 } catch(e) { alert(e.message); }
