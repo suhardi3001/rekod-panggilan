@@ -972,7 +972,7 @@
                 const formatted = Records.currentData.map(r => ({ 'Tarikh dan Masa': Utils.formatDate(r.created_at), 'Nama Pemanggil': r.nama, 'No myKad': r.ic_number, 'Nama PTJ': r.department, 'Medium Komunikasi': r.komunikasi, 'Sistem': r.sistem, 'Perkara': r.perkara, 'Direkod Oleh': STATE.userMap[r.perekod?.toLowerCase()] || r.perekod, 'Status': r.confirmation }));
                 const ws = XLSX.utils.json_to_sheet(formatted);
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "CallLog");
-                XLSX.writeFile(wb, "UTM_CallLog_Export.xlsx");
+                XLSX.writeFile(wb, "UTM_CallLog.xlsx");
             }
         };
 
@@ -1076,7 +1076,7 @@
                 const ws = XLSX.utils.json_to_sheet(formatted);
                 const wb = XLSX.utils.book_new(); 
                 XLSX.utils.book_append_sheet(wb, ws, "HistoryPinjaman");
-                XLSX.writeFile(wb, "UT_LoanHistory.xlsx");
+                XLSX.writeFile(wb, "UTM_LoanHistory.xlsx");
             },
             checkOverdueLoans: async (forceShow = true) => {
                 try {
